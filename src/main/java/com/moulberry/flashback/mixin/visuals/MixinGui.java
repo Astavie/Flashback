@@ -7,7 +7,6 @@ import com.moulberry.flashback.state.EditorState;
 import com.moulberry.flashback.state.EditorStateManager;
 import com.moulberry.flashback.editor.ui.CustomImGuiImplGlfw;
 import com.moulberry.flashback.editor.ui.ReplayUI;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -37,7 +36,7 @@ public abstract class MixinGui {
     private GameType cameraGameType = GameType.DEFAULT_MODE;
 
     @Inject(method = "render", at = @At("HEAD"))
-    public void render_updateCameraGameType(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+    public void render_updateCameraGameType(GuiGraphics guiGraphics, float f, CallbackInfo ci) {
         if (Flashback.isInReplay()) {
             Player player = this.getCameraPlayer();
             if (player != null) {
@@ -54,68 +53,69 @@ public abstract class MixinGui {
         }
     }
 
-    @Inject(method = "renderChat", at = @At("HEAD"), cancellable = true, require = 0)
-    public void renderChat(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        EditorState editorState = EditorStateManager.getCurrent();
-        if (editorState != null && !editorState.replayVisuals.showChat) {
-            ci.cancel();
-        }
-    }
+    // TODO astavie: disable rendering of componets
+//    @Inject(method = "renderChat", at = @At("HEAD"), cancellable = true, require = 0)
+//    public void renderChat(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+//        EditorState editorState = EditorStateManager.getCurrent();
+//        if (editorState != null && !editorState.replayVisuals.showChat) {
+//            ci.cancel();
+//        }
+//    }
+//
+//    @Inject(method = "renderTitle", at = @At("HEAD"), cancellable = true, require = 0)
+//    public void renderTitle(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+//        EditorState editorState = EditorStateManager.getCurrent();
+//        if (editorState != null && !editorState.replayVisuals.showTitleText) {
+//            ci.cancel();
+//        }
+//    }
+//
+//    @Inject(method = "renderScoreboardSidebar", at = @At("HEAD"), cancellable = true, require = 0)
+//    public void renderScoreboardSidebar(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+//        EditorState editorState = EditorStateManager.getCurrent();
+//        if (editorState != null && !editorState.replayVisuals.showScoreboard) {
+//            ci.cancel();
+//        }
+//    }
 
-    @Inject(method = "renderTitle", at = @At("HEAD"), cancellable = true, require = 0)
-    public void renderTitle(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        EditorState editorState = EditorStateManager.getCurrent();
-        if (editorState != null && !editorState.replayVisuals.showTitleText) {
-            ci.cancel();
-        }
-    }
+//    @Inject(method = "renderOverlayMessage", at = @At("HEAD"), cancellable = true, require = 0)
+//    public void renderOverlayMessage(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+//        EditorState editorState = EditorStateManager.getCurrent();
+//        if (editorState != null && !editorState.replayVisuals.showActionBar) {
+//            ci.cancel();
+//        }
+//    }
 
-    @Inject(method = "renderScoreboardSidebar", at = @At("HEAD"), cancellable = true, require = 0)
-    public void renderScoreboardSidebar(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        EditorState editorState = EditorStateManager.getCurrent();
-        if (editorState != null && !editorState.replayVisuals.showScoreboard) {
-            ci.cancel();
-        }
-    }
+//    @Inject(method = "renderHotbarAndDecorations", at = @At("HEAD"), cancellable = true, require = 0)
+//    public void renderHotbarAndDecorations(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+//        EditorState editorState = EditorStateManager.getCurrent();
+//        if (editorState != null && !editorState.replayVisuals.showHotbar) {
+//            ci.cancel();
+//        }
+//    }
 
-    @Inject(method = "renderOverlayMessage", at = @At("HEAD"), cancellable = true, require = 0)
-    public void renderOverlayMessage(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        EditorState editorState = EditorStateManager.getCurrent();
-        if (editorState != null && !editorState.replayVisuals.showActionBar) {
-            ci.cancel();
-        }
-    }
+//    @WrapOperation(method = "renderHotbarAndDecorations", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;getPlayerMode()Lnet/minecraft/world/level/GameType;"), require = 0)
+//    public GameType renderHotbarAndDecorations_getPlayerMode(MultiPlayerGameMode instance, Operation<GameType> original) {
+//        if (Flashback.isInReplay()) {
+//            return this.cameraGameType;
+//        }
+//        return original.call(instance);
+//    }
 
-    @Inject(method = "renderHotbarAndDecorations", at = @At("HEAD"), cancellable = true, require = 0)
-    public void renderHotbarAndDecorations(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
-        EditorState editorState = EditorStateManager.getCurrent();
-        if (editorState != null && !editorState.replayVisuals.showHotbar) {
-            ci.cancel();
-        }
-    }
+//    @WrapOperation(method = "renderHotbarAndDecorations", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;canHurtPlayer()Z"), require = 0)
+//    public boolean renderHotbarAndDecorations_canHurtPlayer(MultiPlayerGameMode instance, Operation<Boolean> original) {
+//        if (Flashback.isInReplay()) {
+//            return this.cameraGameType.isSurvival();
+//        }
+//        return original.call(instance);
+//    }
 
-    @WrapOperation(method = "renderHotbarAndDecorations", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;getPlayerMode()Lnet/minecraft/world/level/GameType;"), require = 0)
-    public GameType renderHotbarAndDecorations_getPlayerMode(MultiPlayerGameMode instance, Operation<GameType> original) {
-        if (Flashback.isInReplay()) {
-            return this.cameraGameType;
-        }
-        return original.call(instance);
-    }
-
-    @WrapOperation(method = "renderHotbarAndDecorations", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;canHurtPlayer()Z"), require = 0)
-    public boolean renderHotbarAndDecorations_canHurtPlayer(MultiPlayerGameMode instance, Operation<Boolean> original) {
-        if (Flashback.isInReplay()) {
-            return this.cameraGameType.isSurvival();
-        }
-        return original.call(instance);
-    }
-
-    @Inject(method = "isExperienceBarVisible", at = @At("HEAD"), cancellable = true, require = 0)
-    public void isExperienceBarVisible(CallbackInfoReturnable<Boolean> cir) {
-        if (Flashback.isInReplay()) {
-            cir.setReturnValue(this.cameraGameType.isSurvival());
-        }
-    }
+//    @Inject(method = "isExperienceBarVisible", at = @At("HEAD"), cancellable = true, require = 0)
+//    public void isExperienceBarVisible(CallbackInfoReturnable<Boolean> cir) {
+//        if (Flashback.isInReplay()) {
+//            cir.setReturnValue(this.cameraGameType.isSurvival());
+//        }
+//    }
 
     @WrapOperation(method = "renderExperienceBar", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getXpNeededForNextLevel()I"), require = 0)
     public int renderExperienceBar_getXpNeededForNextLevel(LocalPlayer instance, Operation<Integer> original) {
@@ -161,16 +161,16 @@ public abstract class MixinGui {
         return original.call(instance);
     }
 
-    @WrapOperation(method = "renderExperienceLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;experienceLevel:I"), require = 0)
-    public int renderExperienceLevel_experienceLevel(LocalPlayer instance, Operation<Integer> original) {
-        if (Flashback.isInReplay()) {
-            Player player = this.getCameraPlayer();
-            if (player != null) {
-                return player.experienceLevel;
-            }
-        }
-        return original.call(instance);
-    }
+//    @WrapOperation(method = "renderExperienceLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/player/LocalPlayer;experienceLevel:I"), require = 0)
+//    public int renderExperienceLevel_experienceLevel(LocalPlayer instance, Operation<Integer> original) {
+//        if (Flashback.isInReplay()) {
+//            Player player = this.getCameraPlayer();
+//            if (player != null) {
+//                return player.experienceLevel;
+//            }
+//        }
+//        return original.call(instance);
+//    }
 
     @Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true)
     public void renderVignette(GuiGraphics guiGraphics, Entity entity, CallbackInfo ci) {

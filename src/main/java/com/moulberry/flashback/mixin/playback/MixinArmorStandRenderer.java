@@ -18,8 +18,8 @@ public class MixinArmorStandRenderer {
      * If the game time isn't updated, it'll just keep on playing it (even if it wasn't hit)
      */
 
-    @Inject(method = "setupRotations(Lnet/minecraft/world/entity/decoration/ArmorStand;Lcom/mojang/blaze3d/vertex/PoseStack;FFFF)V", at = @At("HEAD"), cancellable = true)
-    public void setupRotations(ArmorStand armorStand, PoseStack poseStack, float f, float g, float h, float i, CallbackInfo ci) {
+    @Inject(method = "setupRotations(Lnet/minecraft/world/entity/decoration/ArmorStand;Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V", at = @At("HEAD"), cancellable = true)
+    public void setupRotations(ArmorStand armorStand, PoseStack poseStack, float f, float g, float h, CallbackInfo ci) {
         if (Flashback.isInReplay()) {
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - g));
             ci.cancel();

@@ -2,12 +2,16 @@ package com.moulberry.flashback.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.exporting.ExportJob;
 import com.moulberry.flashback.exporting.ExportJobQueue;
 import com.moulberry.flashback.keyframe.handler.MinecraftKeyframeHandler;
+import com.moulberry.flashback.playback.ReplayTimer;
+import com.moulberry.flashback.playback.TickRateManager;
 import com.moulberry.flashback.state.EditorState;
 import com.moulberry.flashback.state.EditorStateManager;
 import com.moulberry.flashback.exporting.PerfectFrames;
@@ -20,8 +24,8 @@ import net.minecraft.CrashReport;
 import net.minecraft.ReportedException;
 import net.minecraft.Util;
 import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Timer;
 import net.minecraft.client.User;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Overlay;
@@ -35,6 +39,8 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.Connection;
+import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.Services;
@@ -45,7 +51,6 @@ import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.players.GameProfileCache;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraft.world.TickRateManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.storage.LevelStorageSource;
@@ -64,17 +69,19 @@ import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Mixin(Minecraft.class)
 public abstract class MixinMinecraft implements MinecraftExt {
 
     @Shadow
-    public abstract void disconnect();
+    public abstract void clearLevel();
 
     @Shadow
     @Final
@@ -95,6 +102,9 @@ public abstract class MixinMinecraft implements MinecraftExt {
     private boolean isLocalServer;
 
     @Shadow
+    private @Nullable Supplier<CrashReport> delayedCrash;
+
+    @Shadow
     public abstract void updateReportEnvironment(ReportEnvironment reportEnvironment);
 
     @Shadow
@@ -108,9 +118,6 @@ public abstract class MixinMinecraft implements MinecraftExt {
 
     @Shadow
     protected abstract void runTick(boolean bl);
-
-    @Shadow
-    protected abstract void handleDelayedCrash();
 
     @Shadow
     public abstract User getUser();
@@ -140,7 +147,11 @@ public abstract class MixinMinecraft implements MinecraftExt {
 
     @Shadow
     @Final
-    public DeltaTracker.Timer timer;
+    public Timer timer;
+
+    @Shadow
+    public static void crash(CrashReport crashReport) {
+    }
 
     @Inject(method="<init>", at=@At("RETURN"))
     public void init(GameConfig gameConfig, CallbackInfo ci) {
@@ -206,27 +217,21 @@ public abstract class MixinMinecraft implements MinecraftExt {
         }
     }
 
-    @Inject(method = "getTickTargetMillis", at = @At("HEAD"), cancellable = true)
-    public void getTickTargetMillis(float f, CallbackInfoReturnable<Float> cir) {
-        if (Flashback.isInReplay()) {
-            if (this.level == null) {
-                return;
-            }
-
-            TickRateManager tickRateManager = this.level.tickRateManager();
-            if (tickRateManager.runsNormally()) {
-                cir.setReturnValue(tickRateManager.millisecondsPerTick());
-            }
-        }
-    }
+    @Unique
+    private final Timer localPlayerTimer = new Timer(20.0f, 0);
 
     @Unique
-    private final DeltaTracker.Timer localPlayerTimer = new DeltaTracker.Timer(20.0f, 0, FloatUnaryOperator.identity());
+    private final ReplayTimer replayTimer = new ReplayTimer(0, new TickRateManager(false));
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;Z)V", at = @At("HEAD"))
-    public void disconnectHead(Screen screen, boolean isTransferring, CallbackInfo ci) {
+    @Override
+    public ReplayTimer flashback$getReplayTimer() {
+        return replayTimer;
+    }
+
+    @Inject(method = "clearLevel(Lnet/minecraft/client/gui/screens/Screen;)V", at = @At("HEAD"))
+    public void disconnectHead(Screen screen, CallbackInfo ci) {
         try {
-            if (Flashback.getConfig().automaticallyFinish && Flashback.RECORDER != null && !isTransferring) {
+            if (Flashback.getConfig().automaticallyFinish && Flashback.RECORDER != null /* && !isTransferring */ ) {
                 Flashback.finishRecordingReplay();
             }
         } catch (Exception e) {
@@ -234,18 +239,18 @@ public abstract class MixinMinecraft implements MinecraftExt {
         }
     }
 
-    @Inject(method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;Z)V", at = @At("RETURN"))
-    public void disconnectReturn(Screen screen, boolean bl, CallbackInfo ci) {
+    @Inject(method = "clearLevel(Lnet/minecraft/client/gui/screens/Screen;)V", at = @At("RETURN"))
+    public void disconnectReturn(Screen screen, CallbackInfo ci) {
         Flashback.updateIsInReplay();
     }
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;runAllTasks()V", shift = At.Shift.AFTER))
-    public void runTick_runAllTasks(boolean runTick, CallbackInfo ci) {
+    public void runTick_runAllTasks(boolean runTick, CallbackInfo ci, @Local LocalIntRef i) {
         if (ExportJobQueue.drainingQueue) {
             if (ExportJobQueue.queuedJobs.isEmpty()) {
                 ExportJobQueue.drainingQueue = false;
             } else if (Flashback.EXPORT_JOB == null) {
-                Flashback.EXPORT_JOB = new ExportJob(ExportJobQueue.queuedJobs.removeFirst());
+                Flashback.EXPORT_JOB = new ExportJob(ExportJobQueue.queuedJobs.remove(0));
             }
         }
 
@@ -260,10 +265,18 @@ public abstract class MixinMinecraft implements MinecraftExt {
         }
 
         if (Flashback.isInReplay()) {
-            int localPlayerTicks = localPlayerTimer.advanceTime(Util.getMillis(), runTick);
+            // TODO astavie: sync replayTimer from server to client
+            i.set(replayTimer.advanceTime(Util.getMillis()));
+            timer.partialTick = replayTimer.partialTick;
+            timer.tickDelta = replayTimer.tickDelta;
+            for (int j = 0; j < Math.min(10, i.get()); j++) {
+                replayTimer.manager.tick();
+            }
+
+            int localPlayerTicks = localPlayerTimer.advanceTime(Util.getMillis());
             if (this.level != null && this.player != null && !this.player.isPassenger() && !this.player.isRemoved()) {
                 localPlayerTicks = Math.min(10, localPlayerTicks);
-                for (int i = 0; i < localPlayerTicks; i++) {
+                for (int j = 0; j < localPlayerTicks; j++) {
                     this.level.guardEntityTick(this.level::tickNonPassenger, this.player);
                 }
             }
@@ -275,7 +288,7 @@ public abstract class MixinMinecraft implements MinecraftExt {
         if (Flashback.isExporting() || this.cameraEntity != this.player) {
             return originalPartialTick;
         }
-        return this.localPlayerTimer.getGameTimeDeltaPartialTick(true);
+        return this.localPlayerTimer.partialTick;
     }
 
     @Unique
@@ -306,7 +319,7 @@ public abstract class MixinMinecraft implements MinecraftExt {
     @Override
     public void flashback$startReplayServer(LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem stem,
                                             UUID playbackUUID, Path path) {
-        this.disconnect();
+        this.clearLevel();
         this.progressListener.set(null);
         Instant instant = Instant.now();
         try {
@@ -317,7 +330,7 @@ public abstract class MixinMinecraft implements MinecraftExt {
             GameProfileCache.setUsesAuthentication(false);
             this.singleplayerServer = MinecraftServer.spin(thread -> new ReplayServer(thread, (Minecraft) (Object) this,
                 levelStorageAccess, packRepository, stem, services, i -> {
-                StoringChunkProgressListener storingChunkProgressListener = StoringChunkProgressListener.createFromGameruleRadius(i);
+                StoringChunkProgressListener storingChunkProgressListener = new StoringChunkProgressListener(i);
                 this.progressListener.set(storingChunkProgressListener);
                 return ProcessorChunkProgressListener.createStarted(storingChunkProgressListener, this.progressTasks::add);
             }, playbackUUID, path));
@@ -346,15 +359,19 @@ public abstract class MixinMinecraft implements MinecraftExt {
             } catch (InterruptedException crashReport) {
                 // empty catch block
             }
-            this.handleDelayedCrash();
+
+            if (this.delayedCrash != null) {
+                crash(this.delayedCrash.get());
+                return;
+            }
         }
         this.profiler.pop();
         Duration duration = Duration.between(instant, Instant.now());
         SocketAddress socketAddress = this.singleplayerServer.getConnection().startMemoryChannel();
         Connection connection = Connection.connectToLocalServer(socketAddress);
-        connection.initiateServerboundPlayConnection(socketAddress.toString(), 0, new ClientHandshakePacketListenerImpl(connection,
-            (Minecraft) (Object) this, null, null, false, duration, component -> {}, null));
-        connection.send(new ServerboundHelloPacket(this.getUser().getName(), this.getUser().getProfileId()));
+        connection.setListener(new ClientHandshakePacketListenerImpl(connection,  (Minecraft) (Object) this, null, null, false, duration, component -> {}));
+        connection.send(new ClientIntentionPacket(socketAddress.toString(), 0, ConnectionProtocol.PLAY));
+        connection.send(new ServerboundHelloPacket(this.getUser().getName(), Optional.ofNullable(this.getUser().getProfileId())));
         this.pendingConnection = connection;
     }
 

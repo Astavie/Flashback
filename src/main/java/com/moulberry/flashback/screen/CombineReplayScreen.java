@@ -19,16 +19,13 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.commands.Commands;
-import net.minecraft.core.Holder;
-import net.minecraft.core.MappedRegistry;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.WorldLoader;
 import net.minecraft.server.WorldStem;
-import net.minecraft.server.packs.repository.PackRepository;
-import net.minecraft.server.packs.repository.ServerPacksSource;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.*;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.DataPackConfig;
@@ -147,7 +144,7 @@ public class CombineReplayScreen extends Screen {
 
         rowHelper.addChild(Button.builder(Component.literal("Combine Replays"), button -> {
             try {
-                PackRepository packRepository = ServerPacksSource.createVanillaTrustedRepository();
+                PackRepository packRepository = new PackRepository(new ServerPacksSource());
                 packRepository.reload();
 
                 WorldDataConfiguration worldDataConfiguration = new WorldDataConfiguration(new DataPackConfig(List.of(), List.of()), FeatureFlags.DEFAULT_FLAGS);
@@ -156,19 +153,23 @@ public class CombineReplayScreen extends Screen {
                 WorldLoader.InitConfig initConfig = new WorldLoader.InitConfig(packConfig, Commands.CommandSelection.DEDICATED, 4);
 
                 WorldStem worldStem = Util.blockUntilDone(executor -> WorldLoader.load(initConfig, dataLoadContext -> {
-                    Registry<LevelStem> registry = new MappedRegistry<>(Registries.LEVEL_STEM, Lifecycle.stable()).freeze();
-
                     Holder.Reference<Biome> plains = dataLoadContext.datapackWorldgen().registryOrThrow(Registries.BIOME).getHolder(Biomes.PLAINS).get();
                     Holder.Reference<DimensionType> overworld = dataLoadContext.datapackWorldgen().registryOrThrow(Registries.DIMENSION_TYPE).getHolder(BuiltinDimensionTypes.OVERWORLD).get();
 
-                    WorldDimensions worldDimensions = new WorldDimensions(Map.of(LevelStem.OVERWORLD, new LevelStem(overworld, new EmptyLevelSource(plains))));
-                    WorldDimensions.Complete complete = worldDimensions.bake(registry);
+                    WritableRegistry<LevelStem> registryOverworld = new MappedRegistry<>(Registries.LEVEL_STEM, Lifecycle.stable());
+                    registryOverworld.register(LevelStem.OVERWORLD,  new LevelStem(overworld, new EmptyLevelSource(plains)), Lifecycle.stable());
+                    registryOverworld.freeze();
+
+                    Registry<LevelStem> registryEmpty = new MappedRegistry<>(Registries.LEVEL_STEM, Lifecycle.stable()).freeze();
+
+                    WorldDimensions worldDimensions = new WorldDimensions(registryOverworld);
+                    WorldDimensions.Complete complete = worldDimensions.bake(registryEmpty);
 
                     return new WorldLoader.DataLoadOutput<>(new PrimaryLevelData(levelSettings, new WorldOptions(0L, false, false),
                         complete.specialWorldProperty(), complete.lifecycle()), complete.dimensionsRegistryAccess());
                 }, WorldStem::new, Util.backgroundExecutor(), executor)).get();
 
-                ReplayCombiner.combine(worldStem.registries().compositeAccess(), this.newReplayName, this.firstReplay, this.secondReplay, this.output);
+                ReplayCombiner.combine(this.newReplayName, this.firstReplay, this.secondReplay, this.output);
                 Minecraft.getInstance().setScreen(new TitleScreen());
 
                 worldStem.close();

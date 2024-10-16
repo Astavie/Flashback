@@ -15,7 +15,7 @@ public class MixinBoat {
     private int lerpSteps;
 
     @Inject(method = "lerpTo", at = @At("RETURN"))
-    public void modifyLerpTime(double d, double e, double f, float g, float h, int i, CallbackInfo ci) {
+    public void modifyLerpTime(double d, double e, double f, float g, float h, int i, boolean bl, CallbackInfo ci) {
         if (Flashback.isInReplay()) {
             this.lerpSteps = 3;
         }

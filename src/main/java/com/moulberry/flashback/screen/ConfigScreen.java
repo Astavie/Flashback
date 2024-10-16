@@ -5,21 +5,15 @@ import com.moulberry.flashback.configuration.FlashbackConfig;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.options.OptionsSubScreen;
+import net.minecraft.client.gui.screens.SimpleOptionsSubScreen;
 import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;
 
-public class ConfigScreen extends OptionsSubScreen {
+public class ConfigScreen extends SimpleOptionsSubScreen {
 
     public ConfigScreen(Screen previous) {
-        super(previous, Minecraft.getInstance().options, Component.literal("Flashback Options"));
-    }
-
-    protected void addOptions() {
-        if (this.list != null) {
-            this.list.addSmall(Flashback.getConfig().createOptionInstances());
-        }
+        super(previous, Minecraft.getInstance().options, Component.literal("Flashback Options"), Flashback.getConfig().createOptionInstances());
     }
 
     public void removed() {

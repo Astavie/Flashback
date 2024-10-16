@@ -29,8 +29,7 @@ public class MixinLevelRenderer {
         target = "Lnet/minecraft/client/Options;getCloudsType()Lnet/minecraft/client/CloudStatus;",
         shift = At.Shift.BEFORE
     ))
-    public void renderLevelPost(net.minecraft.client.DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture,
-        Matrix4f matrix4f, Matrix4f projection, CallbackInfo ci) {
+    public void renderLevelPost(PoseStack modelViewStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
 
         if (!Flashback.isInReplay()) {
             return;
@@ -39,21 +38,20 @@ public class MixinLevelRenderer {
         this.renderBuffers.bufferSource().endBatch();
 
         PoseStack poseStack = new PoseStack();
-        poseStack.mulPose(matrix4f);
+        // FIXME astavie: no workie (no camera paths)
+//        poseStack.mulPoseMatrix(matrix4f);
 
         // Set model view stack to identity
-        var modelViewStack = RenderSystem.getModelViewStack();
-        modelViewStack.pushMatrix();
-        modelViewStack.identity();
+        modelViewStack.pushPose();
+        modelViewStack.setIdentity();
         RenderSystem.applyModelViewMatrix();
 
-        float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(true);
-        WorldRenderHook.renderHook(poseStack, tickDelta, renderBlockOutline, camera, gameRenderer, lightTexture, projection);
+        WorldRenderHook.renderHook(poseStack, f, bl, camera, gameRenderer, lightTexture, matrix4f);
 
         this.renderBuffers.bufferSource().endBatch();
 
         // Pop model view stack
-        modelViewStack.popMatrix();
+        modelViewStack.popPose();
         RenderSystem.applyModelViewMatrix();
     }
 

@@ -2,7 +2,7 @@ package com.moulberry.flashback.action;
 
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.playback.ReplayServer;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 public class ActionAccuratePlayerPosition implements Action {
@@ -18,7 +18,7 @@ public class ActionAccuratePlayerPosition implements Action {
     }
 
     @Override
-    public void handle(ReplayServer replayServer, RegistryFriendlyByteBuf friendlyByteBuf) {
+    public void handle(ReplayServer replayServer, FriendlyByteBuf friendlyByteBuf) {
         replayServer.handleAccuratePlayerPosition(friendlyByteBuf);
     }
 

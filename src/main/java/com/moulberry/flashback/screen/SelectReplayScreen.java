@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -47,10 +48,11 @@ public class SelectReplayScreen extends Screen {
         this.updateButtonStatus(null);
     }
 
-    @Override
-    protected void setInitialFocus() {
-        this.setInitialFocus(this.searchBox);
-    }
+    // TODO astavie
+//    @Override
+//    protected void setInitialFocus() {
+//        this.setInitialFocus(this.searchBox);
+//    }
 
     @Override
     public void onClose() {
@@ -59,6 +61,7 @@ public class SelectReplayScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int i, int j, float f) {
+        this.renderDirtBackground(guiGraphics);
         super.render(guiGraphics, i, j, f);
         this.searchBox.render(guiGraphics, i, j, f);
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFFFFF);

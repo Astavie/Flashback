@@ -1,33 +1,26 @@
 package com.moulberry.flashback.packet;
 
 import com.moulberry.flashback.Flashback;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record FlashbackRemoteSelectHotbarSlot(int entityId, int slot) implements CustomPacketPayload {
-    public static final Type<FlashbackRemoteSelectHotbarSlot> TYPE = new Type<>(Flashback.createResourceLocation("remote_select_hotbar_slot"));
-
-    public static final StreamCodec<FriendlyByteBuf, FlashbackRemoteSelectHotbarSlot> STREAM_CODEC = new RemoteSelectHotbarSlotStreamCodec();
+public record FlashbackRemoteSelectHotbarSlot(int entityId, int slot) implements FabricPacket {
+    public static final PacketType<FlashbackRemoteSelectHotbarSlot> TYPE = PacketType.create(Flashback.createResourceLocation("remote_select_hotbar_slot"), friendlyByteBuf -> {
+        int entityId = friendlyByteBuf.readVarInt();
+        int slot = friendlyByteBuf.readByte();
+        return new FlashbackRemoteSelectHotbarSlot(entityId, slot);
+    });
 
     @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+    public void write(FriendlyByteBuf friendlyByteBuf) {
+        friendlyByteBuf.writeVarInt(this.entityId);
+        friendlyByteBuf.writeByte(this.slot);
     }
 
-    public static class RemoteSelectHotbarSlotStreamCodec implements StreamCodec<FriendlyByteBuf, FlashbackRemoteSelectHotbarSlot> {
-        @Override
-        public FlashbackRemoteSelectHotbarSlot decode(FriendlyByteBuf friendlyByteBuf) {
-            int entityId = friendlyByteBuf.readVarInt();
-            int slot = friendlyByteBuf.readByte();
-            return new FlashbackRemoteSelectHotbarSlot(entityId, slot);
-        }
-
-        @Override
-        public void encode(FriendlyByteBuf friendlyByteBuf, FlashbackRemoteSelectHotbarSlot remoteHotbarSlot) {
-            friendlyByteBuf.writeVarInt(remoteHotbarSlot.entityId);
-            friendlyByteBuf.writeByte(remoteHotbarSlot.slot);
-        }
+    @Override
+    public PacketType<?> getType() {
+        return TYPE;
     }
 
 }

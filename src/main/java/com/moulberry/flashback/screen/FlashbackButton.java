@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class FlashbackButton extends Button {
 
-    private static final ResourceLocation ICON_PIXELATED = ResourceLocation.parse("flashback:icon_pixelated.png");
+    private static final ResourceLocation ICON_PIXELATED = new ResourceLocation("flashback:icon_pixelated.png");
 
     public FlashbackButton(int x, int y, int width, int height, Component component, OnPress onPress) {
         super(x, y, width, height, component, onPress, DEFAULT_NARRATION);

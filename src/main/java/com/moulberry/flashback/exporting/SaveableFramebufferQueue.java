@@ -6,14 +6,12 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.moulberry.flashback.visuals.ShaderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL32C;
@@ -22,6 +20,7 @@ import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class SaveableFramebufferQueue implements AutoCloseable {
 
@@ -49,7 +48,7 @@ public class SaveableFramebufferQueue implements AutoCloseable {
         if (this.available.isEmpty()) {
             throw new IllegalStateException("No textures available!");
         }
-        return this.available.removeFirst();
+        return this.available.remove(0);
     }
 
     private void blitFlip(RenderTarget src, boolean supersampling) {
@@ -66,15 +65,30 @@ public class SaveableFramebufferQueue implements AutoCloseable {
         RenderSystem.disableCull();
 
         this.flipBuffer.bindWrite(true);
-        ShaderInstance flipShader = ShaderManager.blitScreenFlip;
+        ShaderInstance flipShader = Objects.requireNonNull(Minecraft.getInstance().gameRenderer.blitShader, "Blit shader not loaded");
         flipShader.setSampler("DiffuseSampler", src.colorTextureId);
         flipShader.apply();
-        BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-        bufferBuilder.addVertex(0.0F, 1.0F, 0.0F);
-        bufferBuilder.addVertex(1.0F, 1.0F, 0.0F);
-        bufferBuilder.addVertex(1.0F, 0.0F, 0.0F);
-        bufferBuilder.addVertex(0.0F, 0.0F, 0.0F);
-        BufferUploader.draw(bufferBuilder.buildOrThrow());
+        Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, src.width, 0.0F, src.height, 1000.0F, 3000.0F); // we flip bottom and top
+        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
+        if (flipShader.MODEL_VIEW_MATRIX != null) {
+            flipShader.MODEL_VIEW_MATRIX.set((new Matrix4f()).translation(0.0F, 0.0F, -2000.0F));
+        }
+
+        if (flipShader.PROJECTION_MATRIX != null) {
+            flipShader.PROJECTION_MATRIX.set(matrix4f);
+        }
+        flipShader.apply();
+        float f = (float) src.width;
+        float g = (float) src.height;
+        float h = (float)1;
+        float k = (float)1;
+        BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        bufferBuilder.vertex(0.0, (double)g, 0.0).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex((double)f, (double)g, 0.0).uv(h, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex((double)f, 0.0, 0.0).uv(h, k).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, k).color(255, 255, 255, 255).endVertex();
+        BufferUploader.draw(bufferBuilder.end());
         flipShader.clear();
 
         GlStateManager._depthMask(true);
@@ -105,7 +119,7 @@ public class SaveableFramebufferQueue implements AutoCloseable {
             return null;
         }
 
-        SaveableFramebuffer texture = this.waiting.removeFirst();
+        SaveableFramebuffer texture = this.waiting.remove(0);
 
         NativeImage nativeImage = texture.finishDownload(this.width, this.height);
         FloatBuffer audioBuffer = texture.audioBuffer;

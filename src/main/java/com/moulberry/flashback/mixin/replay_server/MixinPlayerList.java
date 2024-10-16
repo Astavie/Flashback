@@ -4,7 +4,6 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.playback.ReplayServer;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -18,7 +17,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 @Mixin(PlayerList.class)
 public class MixinPlayerList {
@@ -31,13 +29,12 @@ public class MixinPlayerList {
     @Final
     private MinecraftServer server;
 
-    @WrapOperation(method = "placeNewPlayer", at = @At(value = "INVOKE", target = "Ljava/util/Optional;flatMap(Ljava/util/function/Function;)Ljava/util/Optional;"))
-    public Optional<ResourceKey<Level>> placeNewPlayer_flatMap(Optional instance, Function function, Operation<Optional<ResourceKey<Level>>> original,
-            @Local(argsOnly = true) ServerPlayer serverPlayer) {
+    @WrapOperation(method = "placeNewPlayer", at = @At(value = "INVOKE", target = "Ljava/util/Optional;orElse(Ljava/lang/Object;)Ljava/lang/Object;", ordinal = 1))
+    public Object placeNewPlayer_flatMap(Optional instance, Object other, Operation<Object> original, @Local(argsOnly = true) ServerPlayer serverPlayer) {
         if (serverPlayer.server instanceof ReplayServer) {
-            return Optional.of(serverPlayer.level().dimension());
+            return serverPlayer.level().dimension();
         }
-        return original.call(instance, function);
+        return original.call(instance, other);
     }
 
     @WrapWithCondition(method = "placeNewPlayer", at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;[Ljava/lang/Object;)V", remap = false))

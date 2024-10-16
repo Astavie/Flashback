@@ -61,7 +61,7 @@ public class PerfectFrames {
                         continue;
                     }
                     PlayerInfo playerInfo = player.getPlayerInfo();
-                    if (playerInfo != null && !skinManager.getOrLoad(playerInfo.getProfile()).isDone()) {
+                    if (playerInfo != null && !playerInfo.isSkinLoaded()) {
                         Flashback.LOGGER.error("Took too long to load skin for {}", player.getUUID());
                         ignoreSkinLoading.add(player.getUUID());
                     }
@@ -75,7 +75,7 @@ public class PerfectFrames {
                         continue;
                     }
                     PlayerInfo playerInfo = player.getPlayerInfo();
-                    if (playerInfo != null && !skinManager.getOrLoad(playerInfo.getProfile()).isDone()) {
+                    if (playerInfo != null && !playerInfo.isSkinLoaded()) {
                         return false;
                     }
                 }

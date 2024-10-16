@@ -1,11 +1,7 @@
 package com.moulberry.flashback.record;
 
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.*;
-import net.minecraft.network.protocol.configuration.ClientboundFinishConfigurationPacket;
-import net.minecraft.network.protocol.cookie.ClientboundCookieRequestPacket;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.protocol.ping.ClientboundPongResponsePacket;
 
 import java.util.Set;
 
@@ -22,17 +18,9 @@ public class IgnoredPacketSet {
         ClientboundSoundEntityPacket.class,
 
         // Common
-        ClientboundStoreCookiePacket.class,
-        ClientboundCustomReportDetailsPacket.class,
-        ClientboundServerLinksPacket.class,
-        ClientboundCookieRequestPacket.class,
         ClientboundDisconnectPacket.class,
         ClientboundPingPacket.class,
         ClientboundKeepAlivePacket.class,
-        ClientboundTransferPacket.class,
-
-        // Configuration
-        ClientboundFinishConfigurationPacket.class,
 
         // Game
         ClientboundAwardStatsPacket.class,
@@ -55,8 +43,6 @@ public class IgnoredPacketSet {
         ClientboundSetCarriedItemPacket.class,
         ClientboundSetExperiencePacket.class,
         ClientboundSetHealthPacket.class,
-        ClientboundTickingStatePacket.class,
-        ClientboundTickingStepPacket.class,
         ClientboundPlayerCombatEndPacket.class,
         ClientboundPlayerCombatEnterPacket.class,
         ClientboundPlayerCombatKillPacket.class,
@@ -76,12 +62,7 @@ public class IgnoredPacketSet {
         ClientboundSetSimulationDistancePacket.class,
         ClientboundSetChunkCacheCenterPacket.class,
         ClientboundBlockChangedAckPacket.class,
-        ClientboundCustomChatCompletionsPacket.class,
-        ClientboundStartConfigurationPacket.class,
-        ClientboundChunkBatchStartPacket.class,
-        ClientboundChunkBatchFinishedPacket.class,
-        ClientboundDebugSamplePacket.class,
-        ClientboundPongResponsePacket.class
+        ClientboundCustomChatCompletionsPacket.class
     );
 
 }

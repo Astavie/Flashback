@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 public abstract class MixinLivingEntity extends Entity {
 
     @Shadow
-    public abstract void lerpTo(double d, double e, double f, float g, float h, int i);
+    public abstract void lerpTo(double d, double e, double f, float g, float h, int i, boolean bl);
 
     @Shadow
     public abstract void lerpHeadTo(float f, int i);

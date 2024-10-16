@@ -170,6 +170,7 @@ public class FlashbackConfig {
             return minInclusive + distance;
         }
 
+        @Override
         public Codec<Integer> codec() {
             return Codec.intRange(this.minInclusive, this.maxInclusive + 1);
         }
@@ -182,11 +183,6 @@ public class FlashbackConfig {
         @Override
         public int maxInclusive() {
             return this.maxInclusive;
-        }
-
-        @Override
-        public boolean applyValueImmediately() {
-            return true;
         }
     }
 

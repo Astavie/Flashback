@@ -1057,7 +1057,7 @@ public class TimelineWindow {
             }
         }
 
-        boolean multiple = selectedKeyframesList.size() >= 2 || selectedKeyframesList.getFirst().keyframeTicks().size() >= 2;
+        boolean multiple = selectedKeyframesList.size() >= 2 || selectedKeyframesList.get(0).keyframeTicks().size() >= 2;
 
         if (ImGui.button(multiple ? "Remove All" : "Remove")) {
             ImGui.closeCurrentPopup();

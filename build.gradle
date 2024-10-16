@@ -10,7 +10,7 @@ buildscript {
 }
 
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'fabric-loom' version '1.8-SNAPSHOT'
     id 'com.github.johnrengelman.shadow' version "7.1.2"
 	id 'maven-publish'
 }
@@ -64,24 +64,16 @@ dependencies {
 
 	include(implementation("com.moulberry:mixinconstraints:1.0.1"))
 
-    modCompileOnly(rootProject.files('deps/DistantHorizons-2.3.0-a-dev-1.21.1.jar'))
+    modCompileOnly(rootProject.files('deps/DistantHorizons-fabric-2.3.0-a-dev-1.20.1.jar'))
 
-    modCompileOnly("maven.modrinth:sodium:RncWhTxD")
-    modCompileOnly("maven.modrinth:iris:kuOV4Ece")
-    modCompileOnly("maven.modrinth:bobby:2cuVyTav")
-    modCompileOnly("maven.modrinth:simple-voice-chat:95BK1U8I")
-    modCompileOnly("maven.modrinth:replaymod:NtlpUQgI")
-    // modCompileOnly("maven.modrinth:distanthorizons:pEvLEY5E")
-	modImplementation("maven.modrinth:modmenu:xhN1IvHi")
-//	modCompileOnly("maven.modrinth:axiom:D3uDJmiB")
+    modCompileOnly("maven.modrinth:sodium:mc1.20.1-0.5.11")
+    modCompileOnly("maven.modrinth:iris:1.7.5+1.20.1")
+    modCompileOnly("maven.modrinth:bobby:5.0.1")
+    modCompileOnly("maven.modrinth:simple-voice-chat:fabric-1.20.1-2.5.24")
+    modCompileOnly("maven.modrinth:replaymod:1.20.1-2.6.19")
+	modImplementation("maven.modrinth:modmenu:7.2.2")
 
-	// modRuntimeOnly("maven.modrinth:sodium:mc1.20.6-0.5.11")
-
-//    shadow(implementation("org.jcodec:jcodec:0.2.5"))
-//    shadow(implementation("org.jcodec:jcodec-javase:0.2.5"))
-//    shadow(implementation("io.humble:humble-video-all:0.3.0"))
-
-    include(implementation(annotationProcessor("com.bawnorton.mixinsquared:mixinsquared-fabric:0.2.0-beta.6")))
+    include(implementation(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.2.0-beta.6")))
 
 	shadow(implementation("org.bytedeco:javacv-platform:1.5.10") {
 		exclude group: "org.bytedeco", module: "artoolkitplus"
@@ -124,7 +116,7 @@ dependencies {
 	shadow(api(rootProject.files('deps/imgui-java-natives-windows-1.86.11-10-g0dbf36c.jar')))
 
 	// Native File Dialogs
-	String nfdVersion = "org.lwjgl:lwjgl-nfd:3.3.3";
+	String nfdVersion = "org.lwjgl:lwjgl-nfd:3.3.2";
 
 	shadow(implementation(nfdVersion) {
 		exclude group: 'org.lwjgl'
@@ -165,7 +157,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 17
 }
 
 java {
@@ -174,8 +166,8 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
 }
 
 jar {

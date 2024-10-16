@@ -74,7 +74,7 @@ public class MixinTitleScreen extends Screen {
             for (int i = this.normalMenuWidgets.size()-1; i >= 0; i--) {
                 AbstractWidget widget = this.normalMenuWidgets.get(i);
                 int size = widget.getHeight();
-                int x = widget.getRight() + 4 + size * offsetX;
+                int x = widget.getRectangle().right() + 4 + size * offsetX;
                 int y = widget.getY();
 
                 boolean overlapsWithExistingButton = false;
@@ -82,8 +82,8 @@ public class MixinTitleScreen extends Screen {
                 // Check for overlaps with any existing buttons
                 for (Renderable renderable : this.renderables) {
                     if (renderable instanceof AbstractWidget otherWidget) {
-                        if (x < otherWidget.getRight() && x+size > otherWidget.getX() &&
-                            y < otherWidget.getBottom() && y+size > otherWidget.getY()) {
+                        if (x < otherWidget.getRectangle().right() && x+size > otherWidget.getX() &&
+                            y < otherWidget.getRectangle().bottom() && y+size > otherWidget.getY()) {
                             overlapsWithExistingButton = true;
                             break;
                         }

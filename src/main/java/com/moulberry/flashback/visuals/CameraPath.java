@@ -5,7 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
@@ -59,7 +58,8 @@ public class CameraPath {
             if (lastEditorStateModCount != state.modCount || !cameraPathArgs.equals(lastCameraPathArgs)) {
                 lastCameraPathArgs = cameraPathArgs;
 
-                BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+                BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
+                bufferBuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
                 Vector3d basePosition = new Vector3d(camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
                 buildCameraPath(state, basePosition.mul(-1, new Vector3d()), cameraPathArgs, bufferBuilder);
 
@@ -68,7 +68,7 @@ public class CameraPath {
                     cameraPathVertexBuffer = null;
                 }
 
-                MeshData meshData = bufferBuilder.build();
+                BufferBuilder.RenderedBuffer meshData = bufferBuilder.endOrDiscardIfEmpty();
                 if (meshData != null) {
                     CameraPath.basePosition = basePosition;
                     cameraPathVertexBuffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
@@ -111,13 +111,14 @@ public class CameraPath {
             state.applyKeyframes(handler, replayTick);
             state.applyKeyframes(fovHandler, replayTick);
             if (handler.position != null) {
-                BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+                BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
+                bufferBuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
                 renderCamera(bufferBuilder, handler.position.sub(basePosition, new Vector3d()), handler.angle, fovHandler.fov,
                     getCameraColour(false, true), 1.0f);
 
                 var oldModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
                 RenderSystem.getModelViewMatrix().set(poseStack.last().pose());
-                BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+                BufferUploader.drawWithShader(bufferBuilder.end());
                 RenderSystem.getModelViewMatrix().set(oldModelViewMatrix);
             }
         }
@@ -251,10 +252,10 @@ public class CameraPath {
                 dy *= distanceInv;
                 dz *= distanceInv;
 
-                bufferBuilder.addVertex((float) lastPosition.x, (float) lastPosition.y, (float) lastPosition.z).setColor(1.0f, 1.0f, 0.1f, 0.0f)
-                             .setNormal((float) dx, (float) dy, (float) dz);
-                bufferBuilder.addVertex((float) position.x, (float) position.y, (float) position.z).setColor(1.0f, 1.0f, 0.1f, opacity)
-                             .setNormal((float) dx, (float) dy, (float) dz);
+                bufferBuilder.vertex((float) lastPosition.x, (float) lastPosition.y, (float) lastPosition.z).color(1.0f, 1.0f, 0.1f, 0.0f)
+                             .normal((float) dx, (float) dy, (float) dz);
+                bufferBuilder.vertex((float) position.x, (float) position.y, (float) position.z).color(1.0f, 1.0f, 0.1f, opacity)
+                             .normal((float) dx, (float) dy, (float) dz);
             }
 
             lastPosition = position;

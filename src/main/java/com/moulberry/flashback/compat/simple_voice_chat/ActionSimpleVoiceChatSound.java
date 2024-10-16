@@ -6,7 +6,7 @@ import com.moulberry.flashback.packet.FlashbackVoiceChatSound;
 import com.moulberry.flashback.playback.ReplayPlayer;
 import com.moulberry.flashback.playback.ReplayServer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 public class ActionSimpleVoiceChatSound implements Action {
@@ -21,8 +21,8 @@ public class ActionSimpleVoiceChatSound implements Action {
     }
 
     @Override
-    public void handle(ReplayServer replayServer, RegistryFriendlyByteBuf friendlyByteBuf) {
-        var soundPacket = FlashbackVoiceChatSound.STREAM_CODEC.decode(friendlyByteBuf);
+    public void handle(ReplayServer replayServer, FriendlyByteBuf friendlyByteBuf) {
+        var soundPacket = FlashbackVoiceChatSound.TYPE.read(friendlyByteBuf);
 
         if (replayServer.isProcessingSnapshot) {
             return;

@@ -2,7 +2,6 @@ package com.moulberry.flashback.mixin.playback;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.state.EditorState;
@@ -12,10 +11,7 @@ import com.moulberry.flashback.ext.ItemInHandRendererExt;
 import com.moulberry.flashback.ext.MinecraftExt;
 import com.moulberry.flashback.visuals.AccurateEntityPositionHandler;
 import com.moulberry.flashback.visuals.CameraRotation;
-import com.moulberry.flashback.visuals.ReplayVisuals;
-import com.moulberry.flashback.visuals.ShaderManager;
 import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
@@ -24,14 +20,12 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.PostChain;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.GameType;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -60,20 +54,21 @@ public abstract class MixinGameRenderer {
     @Final
     Minecraft minecraft;
 
+    @Shadow @Final private Camera mainCamera;
+
     @Inject(method = "render", at = @At("HEAD"))
-    public void renderHead(DeltaTracker deltaTracker, boolean bl, CallbackInfo ci) {
+    public void renderHead(float partialTick, long l, boolean bl, CallbackInfo ci) {
         LocalPlayer player = Minecraft.getInstance().player;
 
         if (Flashback.RECORDER != null && player != null) {
-            float partialTick = deltaTracker.getGameTimeDeltaPartialTick(true);
             Flashback.RECORDER.trackPartialPosition(player, partialTick);
         }
 
-        AccurateEntityPositionHandler.apply(Minecraft.getInstance().level, deltaTracker);
+        AccurateEntityPositionHandler.apply(Minecraft.getInstance().level, partialTick);
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", remap = false, ordinal = 0), cancellable = true)
-    public void render_noGui(DeltaTracker deltaTracker, boolean bl, CallbackInfo ci) {
+    public void render_noGui(float f, long l, boolean bl, CallbackInfo ci) {
         if (Flashback.isExporting() && Flashback.EXPORT_JOB.getSettings().noGui()) {
             ci.cancel();
         }
@@ -92,7 +87,7 @@ public abstract class MixinGameRenderer {
         AbstractClientPlayer spectatingPlayer = Flashback.getSpectatingPlayer();
         if (spectatingPlayer != null) {
             Entity entity = this.minecraft.getCameraEntity() == null ? this.minecraft.player : this.minecraft.getCameraEntity();
-            float frozenPartialTick = this.minecraft.level.tickRateManager().isEntityFrozen(entity) ? 1.0f : f;
+            float frozenPartialTick = ((MinecraftExt)this.minecraft).flashback$getReplayTimer().manager.isEntityFrozen(entity) ? 1.0f : f;
             ((ItemInHandRendererExt)instance).flashback$renderHandsWithItems(frozenPartialTick, poseStack, bufferSource, spectatingPlayer, i);
         } else {
             original.call(instance, f, poseStack, bufferSource, localPlayer, i);
@@ -115,9 +110,13 @@ public abstract class MixinGameRenderer {
         }
     }
 
-    @WrapOperation(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;rotation()Lorg/joml/Quaternionf;"))
-    public Quaternionf renderLevel(Camera instance, Operation<Quaternionf> original) {
-        return CameraRotation.modifyViewQuaternion(original.call(instance));
+    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setup(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;ZZF)V", shift = At.Shift.AFTER))
+    public void renderLevel(float f, long l, PoseStack poseStack, CallbackInfo ci) {
+        // TODO astavie: this is horrible and you should feel bad
+//        Camera instance = this.mainCamera;
+//        var rotation = CameraRotation.modifyViewQuaternion(instance.rotation());
+//        var angles = rotation.getEulerAnglesYXZ(new Vector3f());
+//        instance.setRotation(-angles.y / 0.017453292F, angles.x / 0.017453292F);
     }
 
     @Inject(method = "tryTakeScreenshotIfNeeded", at = @At("HEAD"), cancellable = true)

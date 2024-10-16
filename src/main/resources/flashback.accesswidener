@@ -13,20 +13,18 @@ accessible field net/minecraft/client/multiplayer/ClientLevel mapData Ljava/util
 accessible method net/minecraft/tags/TagNetworkSerialization serializeToNetwork (Lnet/minecraft/core/Registry;)Lnet/minecraft/tags/TagNetworkSerialization$NetworkPayload;
 
 accessible field net/minecraft/world/entity/LivingEntity lerpHeadSteps I
-accessible field net/minecraft/world/entity/LivingEntity lerpYHeadRot D
+accessible field net/minecraft/world/entity/LivingEntity lyHeadRot D
+accessible field net/minecraft/world/entity/LivingEntity lerpX D
+accessible field net/minecraft/world/entity/LivingEntity lerpY D
+accessible field net/minecraft/world/entity/LivingEntity lerpZ D
+accessible field net/minecraft/world/entity/LivingEntity lerpYRot D
+accessible field net/minecraft/world/entity/LivingEntity lerpXRot D
 accessible field net/minecraft/world/entity/LivingEntity lerpSteps I
-accessible method net/minecraft/world/entity/Entity lerpPositionAndRotationStep (IDDDDD)V
-accessible method net/minecraft/world/entity/LivingEntity lerpHeadRotationStep (ID)V
 accessible method net/minecraft/world/entity/LivingEntity tickHeadTurn (FF)F
 
-accessible field net/minecraft/client/gui/components/BossHealthOverlay events Ljava/util/Map;
+accessible class net/minecraft/server/network/ServerLoginPacketListenerImpl$State
 
-accessible field net/minecraft/client/resources/server/DownloadedPackSource manager Lnet/minecraft/client/resources/server/ServerPackManager;
-accessible field net/minecraft/client/resources/server/ServerPackManager packs Ljava/util/List;
-accessible class net/minecraft/client/resources/server/ServerPackManager$ServerPackData
-accessible field net/minecraft/client/resources/server/ServerPackManager$ServerPackData id Ljava/util/UUID;
-accessible field net/minecraft/client/resources/server/ServerPackManager$ServerPackData url Ljava/net/URL;
-accessible field net/minecraft/client/resources/server/ServerPackManager$ServerPackData hash Lcom/google/common/hash/HashCode;
+accessible field net/minecraft/client/gui/components/BossHealthOverlay events Ljava/util/Map;
 
 accessible field net/minecraft/client/gui/components/PlayerTabOverlay header Lnet/minecraft/network/chat/Component;
 accessible field net/minecraft/client/gui/components/PlayerTabOverlay footer Lnet/minecraft/network/chat/Component;
@@ -39,17 +37,55 @@ mutable field net/minecraft/network/protocol/game/ClientboundLevelChunkWithLight
 accessible field net/minecraft/client/multiplayer/ClientLevel$ClientLevelData isFlat Z
 
 # Entity
-accessible field net/minecraft/network/syncher/SynchedEntityData itemsById [Lnet/minecraft/network/syncher/SynchedEntityData$DataItem;
+accessible field net/minecraft/network/syncher/SynchedEntityData itemsById Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
 accessible field net/minecraft/world/entity/Entity ENTITY_COUNTER Ljava/util/concurrent/atomic/AtomicInteger;
+accessible field net/minecraft/world/entity/Entity random Lnet/minecraft/util/RandomSource;
 accessible field net/minecraft/world/entity/LivingEntity fallFlyTicks I
 
 # Minecraft server
+accessible field net/minecraft/server/MinecraftServer tickables Ljava/util/List;
 accessible field net/minecraft/server/MinecraftServer levels Ljava/util/Map;
 accessible field net/minecraft/server/MinecraftServer worldData Lnet/minecraft/world/level/storage/WorldData;
 accessible field net/minecraft/server/MinecraftServer executor Ljava/util/concurrent/Executor;
 accessible field net/minecraft/server/MinecraftServer storageSource Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;
 accessible field net/minecraft/server/MinecraftServer progressListenerFactory Lnet/minecraft/server/level/progress/ChunkProgressListenerFactory;
-accessible field net/minecraft/server/MinecraftServer nextTickTimeNanos J
+accessible method net/minecraft/server/MinecraftServer loadStatusIcon ()Ljava/util/Optional;
+accessible method net/minecraft/server/MinecraftServer buildServerStatus ()Lnet/minecraft/network/protocol/status/ServerStatus;
+accessible field net/minecraft/server/MinecraftServer statusIcon Lnet/minecraft/network/protocol/status/ServerStatus$Favicon;
+accessible field net/minecraft/server/MinecraftServer nextTickTime J
+accessible field net/minecraft/server/MinecraftServer status Lnet/minecraft/network/protocol/status/ServerStatus;
+accessible field net/minecraft/server/MinecraftServer running Z
+accessible field net/minecraft/server/MinecraftServer lastOverloadWarning J
+accessible field net/minecraft/server/MinecraftServer debugCommandProfilerDelayStart Z
+accessible field net/minecraft/server/MinecraftServer debugCommandProfiler Lnet/minecraft/server/MinecraftServer$TimeProfiler;
+accessible field net/minecraft/server/MinecraftServer tickCount I
+accessible field net/minecraft/server/MinecraftServer mayHaveDelayedTasks Z
+accessible field net/minecraft/server/MinecraftServer delayedTasksMaxNextTickTime J
+accessible field net/minecraft/server/MinecraftServer LOGGER Lorg/slf4j/Logger;
+accessible field net/minecraft/server/MinecraftServer isReady Z
+accessible field net/minecraft/server/MinecraftServer averageTickTime F
+accessible method net/minecraft/server/MinecraftServer startMetricsRecordingTick ()V
+accessible method net/minecraft/server/MinecraftServer endMetricsRecordingTick ()V
+accessible method net/minecraft/server/MinecraftServer constructOrExtractCrashReport (Ljava/lang/Throwable;)Lnet/minecraft/CrashReport;
+accessible field net/minecraft/server/MinecraftServer stopped Z
+
+accessible class net/minecraft/server/MinecraftServer$TimeProfiler
+
+accessible field net/minecraft/server/level/ServerLevel handlingTick Z
+accessible method net/minecraft/server/level/ServerLevel advanceWeatherCycle ()V
+accessible field net/minecraft/server/level/ServerLevel sleepStatus Lnet/minecraft/server/players/SleepStatus;
+accessible field net/minecraft/server/level/ServerLevel players Ljava/util/List;
+accessible method net/minecraft/server/level/ServerLevel wakeUpAllPlayers ()V
+accessible method net/minecraft/server/level/ServerLevel resetWeatherCycle ()V
+accessible method net/minecraft/server/level/ServerLevel tickTime ()V
+accessible method net/minecraft/server/level/ServerLevel tickBlock (Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/Block;)V
+accessible method net/minecraft/server/level/ServerLevel tickFluid (Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/material/Fluid;)V
+accessible method net/minecraft/server/level/ServerLevel runBlockEvents ()V
+accessible field net/minecraft/server/level/ServerLevel emptyTime I
+accessible field net/minecraft/server/level/ServerLevel entityTickList Lnet/minecraft/world/level/entity/EntityTickList;
+accessible method net/minecraft/server/level/ServerLevel shouldDiscardEntity (Lnet/minecraft/world/entity/Entity;)Z
+accessible method net/minecraft/world/level/Level tickBlockEntities ()V
+accessible field net/minecraft/server/level/ServerLevel entityManager Lnet/minecraft/world/level/entity/PersistentEntitySectionManager;
 
 accessible field net/minecraft/world/level/storage/PrimaryLevelData specialWorldProperty Lnet/minecraft/world/level/storage/PrimaryLevelData$SpecialWorldProperty;
 mutable field net/minecraft/world/level/storage/PrimaryLevelData specialWorldProperty Lnet/minecraft/world/level/storage/PrimaryLevelData$SpecialWorldProperty;
@@ -57,7 +93,6 @@ mutable field net/minecraft/world/level/storage/PrimaryLevelData specialWorldPro
 accessible field net/minecraft/server/MinecraftServer registries Lnet/minecraft/core/LayeredRegistryAccess;
 mutable field net/minecraft/server/MinecraftServer registries Lnet/minecraft/core/LayeredRegistryAccess;
 accessible class net/minecraft/resources/RegistryDataLoader$Loader
-accessible class net/minecraft/resources/RegistryDataLoader$LoadingFunction
 accessible field net/minecraft/core/LayeredRegistryAccess keys Ljava/util/List;
 mutable field net/minecraft/core/LayeredRegistryAccess keys Ljava/util/List;
 accessible field net/minecraft/core/LayeredRegistryAccess values Ljava/util/List;
@@ -66,8 +101,6 @@ accessible field net/minecraft/core/LayeredRegistryAccess composite Lnet/minecra
 mutable field net/minecraft/core/LayeredRegistryAccess composite Lnet/minecraft/core/RegistryAccess$Frozen;
 accessible field net/minecraft/core/RegistryAccess$ImmutableRegistryAccess registries Ljava/util/Map;
 mutable field net/minecraft/core/RegistryAccess$ImmutableRegistryAccess registries Ljava/util/Map;
-
-accessible field net/minecraft/server/network/ServerCommonPacketListenerImpl connection Lnet/minecraft/network/Connection;
 
 accessible field net/minecraft/world/level/chunk/PalettedContainer data Lnet/minecraft/world/level/chunk/PalettedContainer$Data;
 accessible class net/minecraft/world/level/chunk/PalettedContainer$Data
@@ -78,7 +111,6 @@ accessible method net/minecraft/server/MinecraftServer synchronizeTime (Lnet/min
 extendable method net/minecraft/server/MinecraftServer synchronizeTime (Lnet/minecraft/server/level/ServerLevel;)V
 
 accessible class net/minecraft/server/level/ThreadedLevelLightEngine$TaskType
-accessible field net/minecraft/server/network/PlayerChunkSender pendingChunks Lit/unimi/dsi/fastutil/longs/LongSet;
 accessible field net/minecraft/server/level/ChunkMap entityMap Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
 accessible class net/minecraft/server/level/ChunkMap$TrackedEntity
 accessible field net/minecraft/server/level/ChunkMap$TrackedEntity serverEntity Lnet/minecraft/server/level/ServerEntity;
@@ -110,22 +142,31 @@ accessible field net/minecraft/server/level/ServerEntity broadcast Ljava/util/fu
 mutable field net/minecraft/server/level/ServerEntity broadcast Ljava/util/function/Consumer;
 accessible field net/minecraft/server/level/ServerEntity entity Lnet/minecraft/world/entity/Entity;
 mutable field net/minecraft/server/level/ServerEntity entity Lnet/minecraft/world/entity/Entity;
-accessible field net/minecraft/server/level/ServerEntity lastSentMovement Lnet/minecraft/world/phys/Vec3;
-accessible field net/minecraft/server/level/ServerEntity lastSentYRot I
-accessible field net/minecraft/server/level/ServerEntity lastSentXRot I
-accessible field net/minecraft/server/level/ServerEntity lastSentYHeadRot I
+accessible field net/minecraft/server/level/ServerEntity ap Lnet/minecraft/world/phys/Vec3;
+accessible field net/minecraft/server/level/ServerEntity yRotp I
+accessible field net/minecraft/server/level/ServerEntity xRotp I
+accessible field net/minecraft/server/level/ServerEntity yHeadRotp I
 accessible field net/minecraft/server/level/ServerEntity wasOnGround Z
 accessible field net/minecraft/server/level/ServerEntity trackedDataValues Ljava/util/List;
 accessible field net/minecraft/server/level/ServerEntity updateInterval I
+accessible field net/minecraft/world/entity/ai/attributes/AttributeMap attributes Ljava/util/Map;
+accessible field net/minecraft/core/RegistrySynchronization NETWORKABLE_REGISTRIES Ljava/util/Map;
 
 # Replay UI
 accessible field net/minecraft/client/gui/screens/Screen renderables Ljava/util/List;
 accessible field net/minecraft/client/KeyMapping key Lcom/mojang/blaze3d/platform/InputConstants$Key;
 
 accessible method net/minecraft/client/particle/ParticleEngine clearParticles ()V
+accessible method net/minecraft/client/gui/screens/Screen clearFocus ()V
 
 accessible field com/mojang/blaze3d/platform/Window width I
 accessible field com/mojang/blaze3d/platform/Window height I
+
+accessible field net/minecraft/world/level/ClipContext collisionContext Lnet/minecraft/world/phys/shapes/CollisionContext;
+mutable field net/minecraft/world/level/ClipContext collisionContext Lnet/minecraft/world/phys/shapes/CollisionContext;
+
+accessible field net/minecraft/client/Timer msPerTick F
+mutable field net/minecraft/client/Timer msPerTick F
 
 # Visuals
 accessible field net/minecraft/client/Camera eyeHeight F
@@ -133,21 +174,13 @@ accessible method net/minecraft/client/multiplayer/ClientLevel getEntities ()Lne
 accessible field net/minecraft/client/renderer/FogRenderer fogRed F
 accessible field net/minecraft/client/renderer/FogRenderer fogGreen F
 accessible field net/minecraft/client/renderer/FogRenderer fogBlue F
+accessible method net/minecraft/client/Camera setRotation (FF)V
 
 # Exporting
-accessible field net/minecraft/client/Minecraft clientTickCount J
-accessible field net/minecraft/client/Minecraft timer Lnet/minecraft/client/DeltaTracker$Timer;
-accessible field net/minecraft/client/DeltaTracker$Timer deltaTicks F
-accessible field net/minecraft/client/DeltaTracker$Timer realtimeDeltaTicks F
-accessible field net/minecraft/client/DeltaTracker$Timer deltaTickResidual F
-accessible field net/minecraft/client/DeltaTracker$Timer pausedDeltaTickResidual F
+accessible field net/minecraft/client/Minecraft timer Lnet/minecraft/client/Timer;
 accessible field com/mojang/blaze3d/platform/NativeImage pixels J
 accessible field com/mojang/blaze3d/platform/NativeImage size J
 accessible method net/minecraft/client/player/AbstractClientPlayer getPlayerInfo ()Lnet/minecraft/client/multiplayer/PlayerInfo;
-accessible field net/minecraft/client/renderer/LevelRenderer visibleSections Lit/unimi/dsi/fastutil/objects/ObjectArrayList;
-accessible field net/minecraft/client/renderer/LevelRenderer sectionOcclusionGraph Lnet/minecraft/client/renderer/SectionOcclusionGraph;
-accessible field net/minecraft/client/renderer/SectionOcclusionGraph fullUpdateTask Ljava/util/concurrent/Future;
-accessible field net/minecraft/client/renderer/SectionOcclusionGraph needsFullUpdate Z
 accessible field com/mojang/blaze3d/platform/Window framebufferWidth I
 accessible field com/mojang/blaze3d/platform/Window framebufferHeight I
 accessible field com/mojang/blaze3d/pipeline/RenderTarget colorTextureId I

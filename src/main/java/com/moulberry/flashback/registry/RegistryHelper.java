@@ -94,16 +94,16 @@ public class RegistryHelper {
         }
 
         var resultOne = codec.encodeStart(dynamicOpsOne, one);
-        if (resultOne.isError()) {
+        if (resultOne.error().isPresent()) {
             return false;
         }
 
         var resultTwo = codec.encodeStart(dynamicOpsTwo, two);
-        if (resultTwo.isError()) {
+        if (resultTwo.error().isPresent()) {
             return false;
         }
 
-        return resultOne.getOrThrow().equals(resultTwo.getOrThrow());
+        return resultOne.get().left().get().equals(resultTwo.get().right().get());
     }
 
 }

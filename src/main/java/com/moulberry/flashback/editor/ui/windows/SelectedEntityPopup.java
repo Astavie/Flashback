@@ -1,13 +1,11 @@
 package com.moulberry.flashback.editor.ui.windows;
 
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.yggdrasil.ProfileResult;
 import com.moulberry.flashback.editor.ui.ImGuiHelper;
 import com.moulberry.flashback.state.EditorState;
 import imgui.ImGui;
 import imgui.type.ImString;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -104,8 +102,9 @@ public class SelectedEntityPopup {
                 try {
                     UUID changeSkinUuid = UUID.fromString(string);
                     if (ImGui.button("Apply Skin")) {
-                        ProfileResult profile = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(changeSkinUuid, true);
-                        editorState.skinOverride.put(entity.getUUID(), profile.profile());
+                        GameProfile profile = new GameProfile(changeSkinUuid, null);
+                        Minecraft.getInstance().getMinecraftSessionService().fillProfileProperties(profile, true);
+                        editorState.skinOverride.put(entity.getUUID(), profile);
                     }
                     hasApplySkin = true;
                 } catch (Exception ignored) {}

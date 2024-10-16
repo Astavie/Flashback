@@ -1,5 +1,6 @@
 package com.moulberry.flashback.playback;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
@@ -25,14 +26,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 public class EmptyLevelSource extends ChunkGenerator {
-    public static final MapCodec<EmptyLevelSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(RegistryOps.retrieveElement(Biomes.PLAINS)).apply(instance, instance.stable(EmptyLevelSource::new)));
+    public static final Codec<EmptyLevelSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(RegistryOps.retrieveElement(Biomes.PLAINS)).apply(instance, instance.stable(EmptyLevelSource::new)));
 
     public EmptyLevelSource(Holder.Reference<Biome> reference) {
         super(new FixedBiomeSource(reference));
     }
 
     @Override
-    protected MapCodec<? extends ChunkGenerator> codec() {
+    protected Codec<? extends ChunkGenerator> codec() {
         return CODEC;
     }
 
@@ -45,7 +46,7 @@ public class EmptyLevelSource extends ChunkGenerator {
     }
 
     @Override
-    public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState randomState, StructureManager structureManager, ChunkAccess chunkAccess) {
+    public CompletableFuture<ChunkAccess> fillFromNoise(Executor executor, Blender blender, RandomState randomState, StructureManager structureManager, ChunkAccess chunkAccess) {
         return CompletableFuture.completedFuture(chunkAccess);
     }
 

@@ -6,7 +6,6 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.configuration.ClientConfigurationPacketListener;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,8 +21,6 @@ public class MixinConnection {
         if (recorder != null) {
             if (packetListener instanceof ClientGamePacketListener) {
                 recorder.writePacketAsync(packet, ConnectionProtocol.PLAY);
-            } else if (packetListener instanceof ClientConfigurationPacketListener) {
-                recorder.writePacketAsync(packet, ConnectionProtocol.CONFIGURATION);
             }
         }
     }

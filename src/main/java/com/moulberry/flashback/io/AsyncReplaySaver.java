@@ -1,33 +1,23 @@
 package com.moulberry.flashback.io;
 
-import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.moulberry.flashback.CachedChunkPacket;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.SneakyThrow;
 import com.moulberry.flashback.TempFolderProvider;
-import com.moulberry.flashback.action.ActionConfigurationPacket;
-import com.moulberry.flashback.action.ActionCreateLocalPlayer;
 import com.moulberry.flashback.action.ActionGamePacket;
 import com.moulberry.flashback.action.ActionLevelChunkCached;
 import com.moulberry.flashback.playback.ReplayServer;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.RegistryAccess;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
-import net.minecraft.network.protocol.configuration.ClientConfigurationPacketListener;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import net.minecraft.network.protocol.game.ClientboundLoginPacket;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,10 +43,10 @@ public class AsyncReplaySaver {
 
     private final Path recordFolder;
 
-    public AsyncReplaySaver(RegistryAccess registryAccess) {
+    public AsyncReplaySaver() {
         this.recordFolder = TempFolderProvider.createTemp(TempFolderProvider.TempFolderType.RECORDING, UUID.randomUUID());
 
-        ReplayWriter replayWriter = new ReplayWriter(registryAccess);
+        ReplayWriter replayWriter = new ReplayWriter();
         new Thread(() -> {
             while (true) {
                 try {
@@ -99,11 +89,10 @@ public class AsyncReplaySaver {
     private final Int2ObjectMap<List<CachedChunkPacket>> cachedChunkPackets = new Int2ObjectOpenHashMap<>();
     private int totalWrittenChunkPackets = 0;
 
-    public void writeGamePackets(StreamCodec<ByteBuf, Packet<? super ClientGamePacketListener>> gamePacketCodec,
-                                 List<Packet<? super ClientGamePacketListener>> packets) {
+    public void writeGamePackets(List<Packet<? super ClientGamePacketListener>> packets) {
         List<Packet<? super ClientGamePacketListener>> packetCopy = new ArrayList<>(packets);
         this.submit(writer -> {
-            RegistryFriendlyByteBuf chunkCacheOutput = null;
+            FriendlyByteBuf chunkCacheOutput = null;
             int lastChunkCacheIndex = -1;
 
             FriendlyByteBuf customPayloadTempBuffer = null;
@@ -145,7 +134,7 @@ public class AsyncReplaySaver {
 
                         // Create new chunk cache output buffer if necessary
                         if (chunkCacheOutput == null) {
-                            chunkCacheOutput = new RegistryFriendlyByteBuf(Unpooled.buffer(), writer.registryAccess());
+                            chunkCacheOutput = new FriendlyByteBuf(Unpooled.buffer());
                         }
 
                         // Write placeholder value for size
@@ -153,7 +142,8 @@ public class AsyncReplaySaver {
                         chunkCacheOutput.writeInt(-1);
 
                         // Write chunk packet
-                        gamePacketCodec.encode(chunkCacheOutput, packet);
+                        chunkCacheOutput.writeVarInt(ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet));
+                        packet.write(chunkCacheOutput);
                         int endWriterIndex = chunkCacheOutput.writerIndex();
 
                         // Write real size value
@@ -174,16 +164,17 @@ public class AsyncReplaySaver {
                     continue;
                 }
 
-                if (packet instanceof ClientboundCustomPayloadPacket) {
+                if (packet instanceof FabricPacket) {
                     // Some mods might throw errors when encoding packets, so this
                     // attempts to encode the packet before starting the action
                     try {
                         if (customPayloadTempBuffer == null) {
-                            customPayloadTempBuffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), writer.registryAccess());
+                            customPayloadTempBuffer = new FriendlyByteBuf(Unpooled.buffer());
                         }
 
                         customPayloadTempBuffer.clear();
-                        gamePacketCodec.encode(customPayloadTempBuffer, packet);
+                        customPayloadTempBuffer.writeVarInt(ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet));
+                        packet.write(customPayloadTempBuffer);
 
                         writer.startAction(ActionGamePacket.INSTANCE);
                         writer.friendlyByteBuf().writeBytes(customPayloadTempBuffer);
@@ -191,7 +182,9 @@ public class AsyncReplaySaver {
                     } catch (Exception ignored) {}
                 } else {
                     writer.startAction(ActionGamePacket.INSTANCE);
-                    gamePacketCodec.encode(writer.friendlyByteBuf(), packet);
+                    var buf = writer.friendlyByteBuf();
+                    buf.writeVarInt(ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet));
+                    packet.write(buf);
                     writer.finishAction(ActionGamePacket.INSTANCE);
                 }
             }
@@ -202,7 +195,7 @@ public class AsyncReplaySaver {
         });
     }
 
-    private void writeChunkCacheFile(RegistryFriendlyByteBuf chunkCacheOutput, int index) {
+    private void writeChunkCacheFile(FriendlyByteBuf chunkCacheOutput, int index) {
         if (chunkCacheOutput == null || chunkCacheOutput.writerIndex() == 0) {
             return;
         }
@@ -217,18 +210,6 @@ public class AsyncReplaySaver {
         } catch (IOException e) {
             SneakyThrow.sneakyThrow(e);
         }
-    }
-
-    public void writeConfigurationPackets(StreamCodec<ByteBuf, Packet<? super ClientConfigurationPacketListener>> configurationPacketCodec,
-                                 List<Packet<? super ClientConfigurationPacketListener>> packets) {
-        List<Packet<? super ClientConfigurationPacketListener>> packetCopy = new ArrayList<>(packets);
-        this.submit(writer -> {
-            for (Packet<? super ClientConfigurationPacketListener> packet : packetCopy) {
-                writer.startAction(ActionConfigurationPacket.INSTANCE);
-                configurationPacketCodec.encode(writer.friendlyByteBuf(), packet);
-                writer.finishAction(ActionConfigurationPacket.INSTANCE);
-            }
-        });
     }
 
     public void writeIcon(NativeImage nativeImage) {

@@ -42,17 +42,18 @@ public class PacketHelper {
                 serverEntity.broadcast = packet -> {};
                 serverEntity.entity = entity;
                 serverEntity.positionCodec.setBase(entity.trackingPosition());
-                serverEntity.lastSentMovement = entity.getDeltaMovement();
-                serverEntity.lastSentYRot = Mth.floor((entity.getYRot() * 256.0f / 360.0f));
-                serverEntity.lastSentXRot = Mth.floor((entity.getXRot() * 256.0f / 360.0f));
-                serverEntity.lastSentYHeadRot = Mth.floor((entity.getYHeadRot() * 256.0f / 360.0f));
+                serverEntity.ap = entity.getDeltaMovement();
+                serverEntity.yRotp = Mth.floor((entity.getYRot() * 256.0f / 360.0f));
+                serverEntity.xRotp = Mth.floor((entity.getXRot() * 256.0f / 360.0f));
+                serverEntity.yRotp = Mth.floor((entity.getYHeadRot() * 256.0f / 360.0f));
                 serverEntity.wasOnGround = entity.onGround();
                 serverEntity.trackedDataValues = entity.getEntityData().getNonDefaultValues();
             } catch (Exception e) {}
         }
 
         try {
-            return entity.getAddEntityPacket(serverEntity);
+            // TODO astavie: serverEntity is now unused ?
+            return entity.getAddEntityPacket();
         } catch (Exception e) {}
 
         return createAddEntity(entity, 0);

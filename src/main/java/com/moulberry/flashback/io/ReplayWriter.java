@@ -7,8 +7,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,11 +15,9 @@ import java.util.Objects;
 public class ReplayWriter {
 
     private final ByteBuf dataBufferInner;
-    private RegistryFriendlyByteBuf dataBuffer;
+    private FriendlyByteBuf dataBuffer;
     private Reference2IntMap<Action> registeredActions;
     private Action writingAction = null;
-
-    private RegistryAccess registryAccess;
 
     private int snapshotSizeWriterIndex = -1;
     private int actionSizeWriterIndex = -1;
@@ -30,10 +27,9 @@ public class ReplayWriter {
     private static final int STATE_WRITING_DATA = 2;
     public int state = STATE_EMPTY;
 
-    public ReplayWriter(RegistryAccess registryAccess) {
+    public ReplayWriter() {
         this.dataBufferInner = Unpooled.buffer();
-        this.dataBuffer = new RegistryFriendlyByteBuf(this.dataBufferInner, registryAccess);
-        this.registryAccess = registryAccess;
+        this.dataBuffer = new FriendlyByteBuf(this.dataBufferInner);
         this.writeHeader();
     }
 
@@ -56,14 +52,6 @@ public class ReplayWriter {
         }
 
         this.state = STATE_EMPTY;
-    }
-
-    public void setRegistryAccess(RegistryAccess registryAccess) {
-        RegistryFriendlyByteBuf newDataBuffer = new RegistryFriendlyByteBuf(this.dataBufferInner, registryAccess);
-        newDataBuffer.writerIndex(this.dataBuffer.writerIndex());
-        newDataBuffer.readerIndex(this.dataBuffer.readerIndex());
-        this.dataBuffer = newDataBuffer;
-        this.registryAccess = registryAccess;
     }
 
     public void startSnapshot() {
@@ -155,12 +143,8 @@ public class ReplayWriter {
         this.actionSizeWriterIndex = -1;
     }
 
-    public RegistryFriendlyByteBuf friendlyByteBuf() {
+    public FriendlyByteBuf friendlyByteBuf() {
         return this.dataBuffer;
-    }
-
-    public RegistryAccess registryAccess() {
-        return this.registryAccess;
     }
 
     public byte[] popBytes() {

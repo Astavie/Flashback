@@ -20,17 +20,15 @@ public class PlayableChunk {
         this.path = path;
     }
 
-    public ReplayReader getOrLoadReplayReader(RegistryAccess registryAccess) {
+    public ReplayReader getOrLoadReplayReader() {
         if (this.replayReader == null) {
             try {
                 byte[] bytes = Files.readAllBytes(this.path);
-                this.replayReader = new ReplayReader(Unpooled.wrappedBuffer(bytes), registryAccess);
+                this.replayReader = new ReplayReader(Unpooled.wrappedBuffer(bytes));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-
-        this.replayReader.changeRegistryAccess(registryAccess);
         return this.replayReader;
     }
 

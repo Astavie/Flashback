@@ -11,6 +11,7 @@ import com.moulberry.flashback.keyframe.Keyframe;
 import com.moulberry.flashback.keyframe.KeyframeType;
 
 import java.lang.reflect.Type;
+import java.util.Objects;
 
 public interface EditorStateHistoryAction {
 
@@ -160,24 +161,20 @@ public interface EditorStateHistoryAction {
         @Override
         public JsonElement serialize(EditorStateHistoryAction src, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject jsonObject;
-            switch (src) {
-                case SetKeyframe setKeyframe -> {
-                    jsonObject = (JsonObject) context.serialize(setKeyframe);
-                    jsonObject.addProperty("action_type", "set_keyframe");
-                }
-                case RemoveKeyframe removeKeyframe -> {
-                    jsonObject = (JsonObject) context.serialize(removeKeyframe);
-                    jsonObject.addProperty("action_type", "remove_keyframe");
-                }
-                case AddTrack addTrack -> {
-                    jsonObject = (JsonObject) context.serialize(addTrack);
-                    jsonObject.addProperty("action_type", "add_track");
-                }
-                case RemoveTrack removeTrack -> {
-                    jsonObject = (JsonObject) context.serialize(removeTrack);
-                    jsonObject.addProperty("action_type", "remove_track");
-                }
-                default -> throw new IllegalStateException("Unknown action type: " + src.getClass());
+            if (src instanceof SetKeyframe setKeyframe) {
+                jsonObject = (JsonObject) context.serialize(setKeyframe);
+                jsonObject.addProperty("action_type", "set_keyframe");
+            } else if (src instanceof RemoveKeyframe removeKeyframe) {
+                jsonObject = (JsonObject) context.serialize(removeKeyframe);
+                jsonObject.addProperty("action_type", "remove_keyframe");
+            } else if (src instanceof AddTrack addTrack) {
+                jsonObject = (JsonObject) context.serialize(addTrack);
+                jsonObject.addProperty("action_type", "add_track");
+            } else if (src instanceof RemoveTrack removeTrack) {
+                jsonObject = (JsonObject) context.serialize(removeTrack);
+                jsonObject.addProperty("action_type", "remove_track");
+            } else {
+                throw new IllegalStateException("Unknown action type: " + src.getClass());
             }
             return jsonObject;
         }

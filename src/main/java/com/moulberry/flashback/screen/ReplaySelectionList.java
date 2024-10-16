@@ -19,11 +19,12 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
-import net.minecraft.client.gui.components.WidgetSprites;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.CommonInputs;
 import net.minecraft.client.gui.screens.*;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.TextureAtlasHolder;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.CommonComponents;
@@ -50,12 +51,12 @@ import java.util.concurrent.CompletionException;
 
 public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList.Entry> {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault());
-    private static final ResourceLocation ERROR_HIGHLIGHTED_SPRITE = ResourceLocation.withDefaultNamespace("world_list/error_highlighted");
-    private static final ResourceLocation ERROR_SPRITE = ResourceLocation.withDefaultNamespace("world_list/error");
-    private static final ResourceLocation WARNING_HIGHLIGHTED_SPRITE = ResourceLocation.withDefaultNamespace("world_list/warning_highlighted");
-    static private final ResourceLocation WARNING_SPRITE = ResourceLocation.withDefaultNamespace("world_list/warning");
-    private static final ResourceLocation JOIN_HIGHLIGHTED_SPRITE = ResourceLocation.withDefaultNamespace("world_list/join_highlighted");
-    private static final ResourceLocation JOIN_SPRITE = ResourceLocation.withDefaultNamespace("world_list/join");
+    private static final ResourceLocation ERROR_HIGHLIGHTED_SPRITE = new ResourceLocation("world_list/error_highlighted");
+    private static final ResourceLocation ERROR_SPRITE = new ResourceLocation("world_list/error");
+    private static final ResourceLocation WARNING_HIGHLIGHTED_SPRITE = new ResourceLocation("world_list/warning_highlighted");
+    static private final ResourceLocation WARNING_SPRITE = new ResourceLocation("world_list/warning");
+    private static final ResourceLocation JOIN_HIGHLIGHTED_SPRITE = new ResourceLocation("world_list/join_highlighted");
+    private static final ResourceLocation JOIN_SPRITE = new ResourceLocation("world_list/join");
     private static final Logger LOGGER = LogUtils.getLogger();
     private final SelectReplayScreen screen;
     private CompletableFuture<List<ReplaySummary>> pendingReplays;
@@ -68,7 +69,7 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
     private Map<UUID, Long> lastOpenTimes = null;
 
     public ReplaySelectionList(SelectReplayScreen selectReplayScreen, Minecraft minecraft, int i, int j, int k, int l, String string, @Nullable ReplaySelectionList replaySelectionList) {
-        super(minecraft, i, j, k, l);
+        super(minecraft, i, j, k, k + j, l);
         this.screen = selectReplayScreen;
         this.loadingHeader = new LoadingHeader(minecraft);
         this.loadFromDeviceHeader = new LoadFromDeviceHeader(minecraft);
@@ -111,12 +112,12 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
     }
 
     @Override
-    public void renderWidget(GuiGraphics guiGraphics, int i, int j, float f) {
+    public void render(GuiGraphics guiGraphics, int i, int j, float f) {
         List<ReplaySummary> list = this.pollReplaysIgnoreErrors();
         if (list != this.currentlyDisplayedReplays) {
             this.handleNewReplays(list);
         }
-        super.renderWidget(guiGraphics, i, j, f);
+        super.render(guiGraphics, i, j, f);
     }
 
     private void handleNewReplays(@Nullable List<ReplaySummary> list) {
@@ -303,12 +304,12 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
     }
 
     @Override
-    public void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
         if (this.children().contains(this.loadingHeader)) {
             this.loadingHeader.updateNarration(narrationElementOutput);
             return;
         }
-        super.updateWidgetNarration(narrationElementOutput);
+        super.updateNarration(narrationElementOutput);
     }
 
     public static class LoadingHeader extends Entry {
@@ -338,8 +339,9 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
 
     public static class LoadFromDeviceHeader extends Entry {
         private static final Component LOAD_REPLAY_LABEL = Component.translatable("flashback.select_replay.load_replay_from_file");
-        private static final WidgetSprites SPRITES = new WidgetSprites(ResourceLocation.withDefaultNamespace("widget/button"), ResourceLocation.withDefaultNamespace("widget/button_disabled"),
-            ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
+        // TODO astavie
+//        private static final WidgetSprites SPRITES = new WidgetSprites(ResourceLocation.withDefaultNamespace("widget/button"), ResourceLocation.withDefaultNamespace("widget/button_disabled"),
+//            ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
         private final Minecraft minecraft;
 
         public LoadFromDeviceHeader(Minecraft minecraft) {
@@ -348,7 +350,8 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
 
         @Override
         public void render(GuiGraphics guiGraphics, int index, int y, int x, int width, int height, int mouseX, int mouseY, boolean hovered, float partialTick) {
-            guiGraphics.blitSprite(SPRITES.get(true, hovered), x + 4, y + 2, width - 8, height - 4);
+            // TODO astavie
+//            guiGraphics.blitSprite(SPRITES.get(true, hovered), x + 4, y + 2, width - 8, height - 4);
 
             int p = (this.minecraft.screen.width - this.minecraft.font.width(LOAD_REPLAY_LABEL)) / 2;
             int q = y + (height - this.minecraft.font.lineHeight) / 2 + 1;
@@ -381,7 +384,7 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
         @Override
         public Component getNarration() {
             MutableComponent component = Component.translatable("narrator.select.world_info", this.summary.getReplayName(),
-                    Component.translationArg(new Date(this.summary.getLastModified())),
+                    new Date(this.summary.getLastModified()),
                     this.summary.getInfo());
             return Component.translatable("narrator.select", component);
         }
@@ -423,15 +426,16 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
                     guiGraphics.renderTooltip(this.minecraft.font, this.minecraft.font.split(this.summary.getHoverInfo(), 240), mouseX, mouseY);
                 }
 
-                ResourceLocation iconOverlay;
-                if (!this.summary.canOpen()) {
-                    iconOverlay = hoveredIcon ? ERROR_HIGHLIGHTED_SPRITE : ERROR_SPRITE;
-                } else if (this.summary.hasWarning()) {
-                    iconOverlay = hoveredIcon ? WARNING_HIGHLIGHTED_SPRITE : WARNING_SPRITE;
-                } else {
-                    iconOverlay = hoveredIcon ? JOIN_HIGHLIGHTED_SPRITE : JOIN_SPRITE;
-                }
-                guiGraphics.blitSprite(iconOverlay, x, y, ICON_WIDTH, ICON_HEIGHT);
+                // TODO astavie
+//                ResourceLocation iconOverlay;
+//                if (!this.summary.canOpen()) {
+//                    iconOverlay = hoveredIcon ? ERROR_HIGHLIGHTED_SPRITE : ERROR_SPRITE;
+//                } else if (this.summary.hasWarning()) {
+//                    iconOverlay = hoveredIcon ? WARNING_HIGHLIGHTED_SPRITE : WARNING_SPRITE;
+//                } else {
+//                    iconOverlay = hoveredIcon ? JOIN_HIGHLIGHTED_SPRITE : JOIN_SPRITE;
+//                }
+//                guiGraphics.blit(iconOverlay, x, y, ICON_WIDTH, ICON_HEIGHT);
             }
         }
 
@@ -458,7 +462,7 @@ public class ReplaySelectionList extends ObjectSelectionList<ReplaySelectionList
 
         public void openReplay() {
             if (this.summary.canOpen()) {
-                this.minecraft.forceSetScreen(new GenericMessageScreen(Component.translatable("flashback.select_replay.data_read")));
+                this.minecraft.forceSetScreen(new GenericDirtMessageScreen(Component.translatable("flashback.select_replay.data_read")));
                 Flashback.openReplayWorld(this.summary.getPath());
 
 //                setOpenTime(this.summary.getReplayMetadata().replayIdentifier, System.currentTimeMillis());

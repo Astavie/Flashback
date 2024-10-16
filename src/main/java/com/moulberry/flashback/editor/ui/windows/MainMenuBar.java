@@ -72,7 +72,7 @@ public class MainMenuBar {
                 if (minecraft.level != null) {
                     minecraft.level.disconnect();
                 }
-                minecraft.disconnect();
+                minecraft.clearLevel();
                 minecraft.setScreen(new SelectReplayScreen(new TitleScreen()));
             }
             ImGui.endMenu();

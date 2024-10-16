@@ -2,16 +2,17 @@ package com.moulberry.flashback.playback;
 
 import com.mojang.authlib.GameProfile;
 import com.moulberry.flashback.ext.ServerLevelExt;
-import net.minecraft.network.protocol.game.CommonPlayerSpawnInfo;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.level.ChunkPos;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -31,20 +32,24 @@ public class ReplayPlayer extends ServerPlayer {
     public int lastFirstPersonFoodLevel = 0;
     public float lastFirstPersonSaturationLevel = 0;
 
-    public ReplayPlayer(MinecraftServer minecraftServer, ServerLevel serverLevel, GameProfile gameProfile, ClientInformation clientInformation) {
-        super(minecraftServer, serverLevel, gameProfile, clientInformation);
+    public final LongSet trackingChunks = new LongOpenHashSet();
+    public final LongSet pendingChunks = new LongOpenHashSet();
+
+    public ReplayPlayer(MinecraftServer minecraftServer, ServerLevel serverLevel, GameProfile gameProfile) {
+        super(minecraftServer, serverLevel, gameProfile);
     }
 
-    @Override
-    public CommonPlayerSpawnInfo createCommonSpawnInfo(ServerLevel serverLevel) {
-        return new CommonPlayerSpawnInfo(serverLevel.dimensionTypeRegistration(), serverLevel.dimension(),
-            ((ServerLevelExt)serverLevel).flashback$getSeedHash(), this.gameMode.getGameModeForPlayer(),
-            this.gameMode.getPreviousGameModeForPlayer(),
-            serverLevel.isDebug(), serverLevel.isFlat(), this.getLastDeathLocation(), this.getPortalCooldown());
-    }
+    // TODO astavie: is this required?
+//    @Override
+//    public CommonPlayerSpawnInfo createCommonSpawnInfo(ServerLevel serverLevel) {
+//        return new CommonPlayerSpawnInfo(serverLevel.dimensionTypeRegistration(), serverLevel.dimension(),
+//            ((ServerLevelExt)serverLevel).flashback$getSeedHash(), this.gameMode.getGameModeForPlayer(),
+//            this.gameMode.getPreviousGameModeForPlayer(),
+//            serverLevel.isDebug(), serverLevel.isFlat(), this.getLastDeathLocation(), this.getPortalCooldown());
+//    }
 
     @Override
-    public int awardRecipes(Collection<RecipeHolder<?>> collection) {
+    public int awardRecipes(Collection<Recipe<?>> collection) {
         return 0;
     }
 
@@ -68,5 +73,17 @@ public class ReplayPlayer extends ServerPlayer {
     @Override
     public boolean isInvulnerableTo(DamageSource damageSource) {
         return true;
+    }
+
+    @Override
+    public void trackChunk(ChunkPos chunkPos, Packet<?> packet) {
+        this.trackingChunks.add(chunkPos.toLong());
+        super.trackChunk(chunkPos, packet);
+    }
+
+    @Override
+    public void untrackChunk(ChunkPos chunkPos) {
+        this.trackingChunks.remove(chunkPos.toLong());
+        super.untrackChunk(chunkPos);
     }
 }

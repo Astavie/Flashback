@@ -146,7 +146,7 @@ public class ReplayExporter {
             }
 
             JsonObject metaObject = GSON.fromJson(metaString, JsonObject.class);
-            if (metaObject.isEmpty()) {
+            if (metaObject.size() == 0) {
                 Flashback.LOGGER.error("Metadata JSON is empty");
                 return null;
             }

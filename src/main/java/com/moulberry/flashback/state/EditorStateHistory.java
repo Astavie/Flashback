@@ -11,10 +11,10 @@ public class EditorStateHistory {
 
     public void push(EditorState editorState, EditorStateHistoryEntry entry) {
         while (this.entries.size() > this.position) {
-            this.entries.removeLast();
+            this.entries.remove(this.entries.size() - 1);
         }
         while (this.entries.size() >= 256) {
-            this.entries.removeFirst();
+            this.entries.remove(0);
             this.position -= 1;
         }
 

@@ -67,7 +67,7 @@ public class SimpleVoiceChatRecorder {
             if (shouldWritePacket()) {
                 Flashback.RECORDER.submitCustomTask(writer -> {
                     writer.startAction(ActionSimpleVoiceChatSound.INSTANCE);
-                    FlashbackVoiceChatSound.STREAM_CODEC.encode(writer.friendlyByteBuf(), soundPacket);
+                    soundPacket.write(writer.friendlyByteBuf());
                     writer.finishAction(ActionSimpleVoiceChatSound.INSTANCE);
                 });
             }

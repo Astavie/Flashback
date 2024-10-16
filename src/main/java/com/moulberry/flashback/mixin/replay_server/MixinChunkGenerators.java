@@ -1,5 +1,6 @@
 package com.moulberry.flashback.mixin.replay_server;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.moulberry.flashback.playback.EmptyLevelSource;
 import net.minecraft.core.Registry;
@@ -14,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinChunkGenerators {
 
     @Inject(method = "bootstrap", at = @At("HEAD"))
-    private static void bootstrap(Registry<MapCodec<? extends ChunkGenerator>> registry, CallbackInfoReturnable<MapCodec<? extends ChunkGenerator>> cir) {
+    private static void bootstrap(Registry<Codec<? extends ChunkGenerator>> registry, CallbackInfoReturnable<Codec<? extends ChunkGenerator>> cir) {
         Registry.register(registry, "flashback/empty", EmptyLevelSource.CODEC);
     }
 

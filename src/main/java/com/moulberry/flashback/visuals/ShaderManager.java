@@ -17,15 +17,11 @@ public class ShaderManager {
     public static final ShaderManager INSTANCE = new ShaderManager();
 
     public static ShaderInstance blitScreenRoundAlpha;
-    public static ShaderInstance blitScreenFlip;
 
     public void register() {
         CoreShaderRegistrationCallback.EVENT.register(context -> {
-            context.register(ResourceLocation.parse("flashback:blit_screen_round_alpha"), DefaultVertexFormat.BLIT_SCREEN, shaderInstance -> {
+            context.register(new ResourceLocation("flashback:blit_screen_round_alpha"), DefaultVertexFormat.BLIT_SCREEN, shaderInstance -> {
                 blitScreenRoundAlpha = shaderInstance;
-            });
-            context.register(ResourceLocation.parse("flashback:blit_screen_flip"), DefaultVertexFormat.BLIT_SCREEN, shaderInstance -> {
-                blitScreenFlip = shaderInstance;
             });
         });
     }

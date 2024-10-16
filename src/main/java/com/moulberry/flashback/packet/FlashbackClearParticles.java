@@ -1,15 +1,23 @@
 package com.moulberry.flashback.packet;
 
 import com.moulberry.flashback.Flashback;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.minecraft.network.FriendlyByteBuf;
 
-public class FlashbackClearParticles implements CustomPacketPayload {
-    public static final Type<FlashbackClearParticles> TYPE = new Type<>(Flashback.createResourceLocation("clear_particles"));
+public class FlashbackClearParticles implements FabricPacket {
     public static final FlashbackClearParticles INSTANCE = new FlashbackClearParticles();
+    public static final PacketType<FlashbackClearParticles> TYPE = PacketType.create(Flashback.createResourceLocation("clear_particles"), buf -> INSTANCE);
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+    private FlashbackClearParticles() {
     }
 
+    @Override
+    public void write(FriendlyByteBuf friendlyByteBuf) {
+    }
+
+    @Override
+    public PacketType<?> getType() {
+        return TYPE;
+    }
 }
