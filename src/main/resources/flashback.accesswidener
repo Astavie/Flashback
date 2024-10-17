@@ -68,6 +68,14 @@ accessible method net/minecraft/server/MinecraftServer startMetricsRecordingTick
 accessible method net/minecraft/server/MinecraftServer endMetricsRecordingTick ()V
 accessible method net/minecraft/server/MinecraftServer constructOrExtractCrashReport (Ljava/lang/Throwable;)Lnet/minecraft/CrashReport;
 accessible field net/minecraft/server/MinecraftServer stopped Z
+accessible field net/minecraft/server/MinecraftServer lastServerStatus J
+accessible method net/minecraft/client/server/IntegratedServer tickPaused ()V
+accessible field net/minecraft/client/server/IntegratedServer paused Z
+accessible field net/minecraft/client/server/IntegratedServer previousSimulationDistance I
+
+accessible field net/minecraft/world/level/Level tickingBlockEntities Z
+accessible field net/minecraft/world/level/Level pendingBlockEntityTickers Ljava/util/List;
+accessible field net/minecraft/world/level/Level blockEntityTickers Ljava/util/List;
 
 accessible class net/minecraft/server/MinecraftServer$TimeProfiler
 
@@ -151,6 +159,8 @@ accessible field net/minecraft/server/level/ServerEntity trackedDataValues Ljava
 accessible field net/minecraft/server/level/ServerEntity updateInterval I
 accessible field net/minecraft/world/entity/ai/attributes/AttributeMap attributes Ljava/util/Map;
 accessible field net/minecraft/core/RegistrySynchronization NETWORKABLE_REGISTRIES Ljava/util/Map;
+accessible class net/minecraft/network/ConnectionProtocol$PacketSet
+accessible field net/minecraft/network/ConnectionProtocol flows Ljava/util/Map;
 
 # Replay UI
 accessible field net/minecraft/client/gui/screens/Screen renderables Ljava/util/List;

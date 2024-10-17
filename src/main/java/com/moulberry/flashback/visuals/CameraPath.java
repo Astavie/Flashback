@@ -253,9 +253,9 @@ public class CameraPath {
                 dz *= distanceInv;
 
                 bufferBuilder.vertex((float) lastPosition.x, (float) lastPosition.y, (float) lastPosition.z).color(1.0f, 1.0f, 0.1f, 0.0f)
-                             .normal((float) dx, (float) dy, (float) dz);
+                             .normal((float) dx, (float) dy, (float) dz).endVertex();
                 bufferBuilder.vertex((float) position.x, (float) position.y, (float) position.z).color(1.0f, 1.0f, 0.1f, opacity)
-                             .normal((float) dx, (float) dy, (float) dz);
+                             .normal((float) dx, (float) dy, (float) dz).endVertex();
             }
 
             lastPosition = position;

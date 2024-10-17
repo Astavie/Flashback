@@ -99,10 +99,10 @@ public abstract class MixinLevelRenderer {
             shaderInstance.apply();
             BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().getBuilder();
             bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-            bufferBuilder.vertex(0.0f, 0.0f, 0.0f);
-            bufferBuilder.vertex(1.0f, 0.0f, 0.0f);
-            bufferBuilder.vertex(1.0f, 1.0f, 0.0f);
-            bufferBuilder.vertex(0.0f, 1.0f, 0.0f);
+            bufferBuilder.vertex(0.0f, 0.0f, 0.0f).endVertex();
+            bufferBuilder.vertex(1.0f, 0.0f, 0.0f).endVertex();
+            bufferBuilder.vertex(1.0f, 1.0f, 0.0f).endVertex();
+            bufferBuilder.vertex(0.0f, 1.0f, 0.0f).endVertex();
             BufferUploader.draw(bufferBuilder.end());
             shaderInstance.clear();
             GlStateManager._enableBlend();

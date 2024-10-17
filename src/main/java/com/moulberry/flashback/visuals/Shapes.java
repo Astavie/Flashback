@@ -29,8 +29,8 @@ public class Shapes {
         dz *= distanceInv;
 
         Matrix4f transform = pose.pose();
-        bufferBuilder.vertex(transform, fromX, fromY, fromZ).color(red, green, blue, alpha).normal(pose.normal(), dx, dy, dz);
-        bufferBuilder.vertex(transform, toX, toY, toZ).color(red, green, blue, alpha).normal(pose.normal(), dx, dy, dz);
+        bufferBuilder.vertex(transform, fromX, fromY, fromZ).color(red, green, blue, alpha).normal(pose.normal(), dx, dy, dz).endVertex();
+        bufferBuilder.vertex(transform, toX, toY, toZ).color(red, green, blue, alpha).normal(pose.normal(), dx, dy, dz).endVertex();
     }
 
 }

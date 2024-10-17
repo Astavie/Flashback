@@ -26,10 +26,11 @@ public class MixinLevelRenderer {
 
     @Inject(method="renderLevel", at=@At(
         value = "INVOKE",
-        target = "Lnet/minecraft/client/Options;getCloudsType()Lnet/minecraft/client/CloudStatus;",
+        target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V",
+        ordinal = 3,
         shift = At.Shift.BEFORE
     ))
-    public void renderLevelPost(PoseStack modelViewStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
+    public void renderLevelPost(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
 
         if (!Flashback.isInReplay()) {
             return;
@@ -37,11 +38,8 @@ public class MixinLevelRenderer {
 
         this.renderBuffers.bufferSource().endBatch();
 
-        PoseStack poseStack = new PoseStack();
-        // FIXME astavie: no workie (no camera paths)
-//        poseStack.mulPoseMatrix(matrix4f);
-
         // Set model view stack to identity
+        var modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushPose();
         modelViewStack.setIdentity();
         RenderSystem.applyModelViewMatrix();

@@ -31,6 +31,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.CrashReport;
 import net.minecraft.ReportedException;
@@ -72,6 +73,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.phys.Vec3;
@@ -87,15 +89,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -699,6 +693,7 @@ public class ReplayServer extends IntegratedServer {
     @Override
     protected void runServer() {
         try {
+            ServerLifecycleEvents.SERVER_STARTING.invoker().onServerStarting(this);
             if (!this.initServer()) {
                 throw new IllegalStateException("Failed to initialize server");
             }
@@ -706,6 +701,7 @@ public class ReplayServer extends IntegratedServer {
             this.nextTickTimeNanos = Util.getMillis();
             this.nextTickTime = this.nextTickTimeNanos / 1000000;
             this.statusIcon = (ServerStatus.Favicon)this.loadStatusIcon().orElse(null);
+            ServerLifecycleEvents.SERVER_STARTED.invoker().onServerStarted(this);
             this.status = this.buildServerStatus();
 
             while (this.running) {
@@ -994,7 +990,45 @@ public class ReplayServer extends IntegratedServer {
 
         // Tick underlying server
         tickRateManager.tick();
-        super.tickServer(booleanSupplier);
+        boolean bl = this.paused;
+        this.paused = Minecraft.getInstance().isPaused();
+
+        boolean bl2 = Minecraft.getInstance().getConnection() != null;
+        if (bl2 && this.paused) {
+            this.tickPaused();
+        } else {
+            if (bl && !this.paused) {
+                this.forceTimeSynchronization();
+            }
+
+            long l = Util.getNanos();
+            this.tickCount++;
+            this.tickChildren(booleanSupplier);
+            if (l - this.lastServerStatus >= 5000000000L) {
+                this.lastServerStatus = l;
+                this.status = this.buildServerStatus();
+            }
+
+            this.getProfiler().push("tallying");
+            long m = this.tickTimes[this.tickCount % 100] = Util.getNanos() - l;
+            this.averageTickTime = this.averageTickTime * 0.8F + (float)m / 1000000.0F * 0.19999999F;
+            long n = Util.getNanos();
+            this.getFrameTimer().logFrameDuration(n - l);
+            this.getProfiler().pop();
+
+            int i = Math.max(2, Minecraft.getInstance().options.renderDistance().get());
+            if (i != this.getPlayerList().getViewDistance()) {
+                Flashback.LOGGER.info("Changing view distance to {}, from {}", i, this.getPlayerList().getViewDistance());
+                this.getPlayerList().setViewDistance(i);
+            }
+
+            int j = Math.max(2, Minecraft.getInstance().options.simulationDistance().get());
+            if (j != this.previousSimulationDistance) {
+                Flashback.LOGGER.info("Changing simulation distance to {}, from {}", j, this.previousSimulationDistance);
+                this.getPlayerList().setSimulationDistance(j);
+                this.previousSimulationDistance = j;
+            }
+        }
 
         // Teleport entities
         if (!this.needsPositionUpdate.isEmpty()) {
@@ -1206,7 +1240,25 @@ public class ReplayServer extends IntegratedServer {
                 }
             });
             profilerFiller.pop();
-            level.tickBlockEntities();
+
+            profilerFiller.push("blockEntities");
+            level.tickingBlockEntities = true;
+            if (!level.pendingBlockEntityTickers.isEmpty()) {
+                level.blockEntityTickers.addAll(level.pendingBlockEntityTickers);
+                level.pendingBlockEntityTickers.clear();
+            }
+
+            Iterator<TickingBlockEntity> iterator = level.blockEntityTickers.iterator();
+
+            while (iterator.hasNext()) {
+                TickingBlockEntity tickingBlockEntity = (TickingBlockEntity)iterator.next();
+                if (tickingBlockEntity.isRemoved()) {
+                    iterator.remove();
+                }
+            }
+
+            level.tickingBlockEntities = false;
+            profilerFiller.pop();
         }
 
         profilerFiller.push("entityManagement");

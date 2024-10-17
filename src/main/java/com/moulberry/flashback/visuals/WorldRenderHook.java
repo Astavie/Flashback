@@ -64,10 +64,10 @@ public class WorldRenderHook {
                 poseStack.mulPose(camera.rotation());
 
                 final float width = 0.2f;
-                bufferBuilder.vertex(poseStack.last().pose(), -width, -width, 0.0f).uv(0f, 0f).color(marker.colour() | 0xFF000000);
-                bufferBuilder.vertex(poseStack.last().pose(), width, -width, 0.0f).uv(1f, 0f).color(marker.colour() | 0xFF000000);
-                bufferBuilder.vertex(poseStack.last().pose(), width, width, 0.0f).uv(1f, 1f).color(marker.colour() | 0xFF000000);
-                bufferBuilder.vertex(poseStack.last().pose(), -width, width, 0.0f).uv(0f, 1f).color(marker.colour() | 0xFF000000);
+                bufferBuilder.vertex(poseStack.last().pose(), -width, -width, 0.0f).uv(0f, 0f).color(marker.colour() | 0xFF000000).endVertex();
+                bufferBuilder.vertex(poseStack.last().pose(), width, -width, 0.0f).uv(1f, 0f).color(marker.colour() | 0xFF000000).endVertex();
+                bufferBuilder.vertex(poseStack.last().pose(), width, width, 0.0f).uv(1f, 1f).color(marker.colour() | 0xFF000000).endVertex();
+                bufferBuilder.vertex(poseStack.last().pose(), -width, width, 0.0f).uv(0f, 1f).color(marker.colour() | 0xFF000000).endVertex();
 
                 if (marker.description() != null) {
                     Font font = Minecraft.getInstance().font;

@@ -17,6 +17,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 
 import java.io.IOException;
@@ -164,7 +165,10 @@ public class AsyncReplaySaver {
                     continue;
                 }
 
-                if (packet instanceof FabricPacket) {
+                int packetId = ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet);
+                if (packetId == -1) continue;
+
+                if (packet instanceof ClientboundCustomPayloadPacket) {
                     // Some mods might throw errors when encoding packets, so this
                     // attempts to encode the packet before starting the action
                     try {
@@ -173,7 +177,7 @@ public class AsyncReplaySaver {
                         }
 
                         customPayloadTempBuffer.clear();
-                        customPayloadTempBuffer.writeVarInt(ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet));
+                        customPayloadTempBuffer.writeVarInt(packetId);
                         packet.write(customPayloadTempBuffer);
 
                         writer.startAction(ActionGamePacket.INSTANCE);
@@ -183,7 +187,7 @@ public class AsyncReplaySaver {
                 } else {
                     writer.startAction(ActionGamePacket.INSTANCE);
                     var buf = writer.friendlyByteBuf();
-                    buf.writeVarInt(ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet));
+                    buf.writeVarInt(packetId);
                     packet.write(buf);
                     writer.finishAction(ActionGamePacket.INSTANCE);
                 }
