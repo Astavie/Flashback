@@ -12,6 +12,8 @@ import com.moulberry.flashback.packet.FlashbackRemoteExperience;
 import com.moulberry.flashback.packet.FlashbackRemoteFoodData;
 import com.moulberry.flashback.packet.FlashbackRemoteSelectHotbarSlot;
 import com.moulberry.flashback.packet.FlashbackRemoteSetSlot;
+import io.github.fabricators_of_create.porting_lib.core.PortingLib;
+import io.github.fabricators_of_create.porting_lib.entity.IEntityAdditionalSpawnData;
 import io.netty.channel.embedded.EmbeddedChannel;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -1526,4 +1528,15 @@ public class ReplayGamePacketHandler implements ClientGamePacketListener {
         return false;
     }
 
+    public void handleExtraDataPacket(ClientboundCustomPayloadPacket cp) {
+        FriendlyByteBuf buf = cp.getData();
+        int entityId = buf.readVarInt();
+        Entity entity = this.getEntityOrPending(entityId);
+
+        if (entity instanceof IEntityAdditionalSpawnData extra) {
+            extra.readSpawnData(buf);
+        } else {
+            PortingLib.LOGGER.error("ExtraSpawnDataEntity spawn data received, but no corresponding entity was found! Entity: [{}]", entity);
+        }
+    }
 }

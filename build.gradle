@@ -36,6 +36,18 @@ repositories {
 		}
 	}
     maven { url = "https://maven.bawnorton.com/releases" }
+	maven { url = "https://mvn.devos.one/snapshots/" }
+	maven { url = "https://mvn.devos.one/releases/" }
+	maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
+	maven { url = "https://modmaven.dev" }
+	maven { // Reach Entity Attributes
+		url = "https://maven.jamieswhiteshirt.com/libs-release"
+		content { includeGroup("com.jamieswhiteshirt") }
+	}
+	maven { // for Porting Lib: Mixin Extras, Fabric ASM
+		url = "https://jitpack.io/"
+		content { includeGroupAndSubgroups("com.github") }
+	}
 }
 
 loom {
@@ -72,6 +84,9 @@ dependencies {
     modCompileOnly("maven.modrinth:simple-voice-chat:fabric-1.20.1-2.5.24")
     modCompileOnly("maven.modrinth:replaymod:1.20.1-2.6.19")
 	modImplementation("maven.modrinth:modmenu:7.2.2")
+
+	modCompileOnly("com.simibubi.create:create-fabric-${minecraft_version}:0.5.1-f-build.1335+mc1.20.1")
+	// modImplementation("maven.modrinth:valkyrien-skies:1.20.1-fabric-2.3.0-beta.5")
 
     include(implementation(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.2.0-beta.6")))
 

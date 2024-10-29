@@ -24,6 +24,8 @@ import com.moulberry.flashback.packet.FinishedServerTick;
 import com.moulberry.flashback.record.FlashbackChunkMeta;
 import com.moulberry.flashback.record.FlashbackMeta;
 import com.moulberry.flashback.record.Recorder;
+import io.github.fabricators_of_create.porting_lib.entity.IEntityAdditionalSpawnData;
+import io.github.fabricators_of_create.porting_lib.entity.client.PortingLibEntityClient;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -33,6 +35,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.CrashReport;
 import net.minecraft.ReportedException;
 import net.minecraft.SharedConstants;
@@ -536,10 +539,14 @@ public class ReplayServer extends IntegratedServer {
             friendlyByteBuf.readerIndex(friendlyByteBuf.writerIndex());
             return;
         }
-        if (!AllowPendingEntityPacketSet.allowPendingEntity(packet)) {
-            this.gamePacketHandler.flushPendingEntities();
+        if (packet instanceof ClientboundCustomPayloadPacket cp && FabricLoader.getInstance().isModLoaded("porting_lib_entity") && cp.getIdentifier().equals(IEntityAdditionalSpawnData.EXTRA_DATA_PACKET)) {
+            this.gamePacketHandler.handleExtraDataPacket(cp);
+        } else {
+            if (!AllowPendingEntityPacketSet.allowPendingEntity(packet)) {
+                this.gamePacketHandler.flushPendingEntities();
+            }
+            packet.handle(this.gamePacketHandler);
         }
-        packet.handle(this.gamePacketHandler);
     }
 
     public void handleCreateLocalPlayer(FriendlyByteBuf friendlyByteBuf) {

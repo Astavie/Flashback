@@ -17,8 +17,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -165,38 +167,53 @@ public class AsyncReplaySaver {
                     continue;
                 }
 
-                int packetId = ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet);
-                if (packetId == -1) continue;
-
-                if (packet instanceof ClientboundCustomPayloadPacket) {
-                    // Some mods might throw errors when encoding packets, so this
-                    // attempts to encode the packet before starting the action
-                    try {
-                        if (customPayloadTempBuffer == null) {
-                            customPayloadTempBuffer = new FriendlyByteBuf(Unpooled.buffer());
-                        }
-
-                        customPayloadTempBuffer.clear();
-                        customPayloadTempBuffer.writeVarInt(packetId);
-                        packet.write(customPayloadTempBuffer);
-
-                        writer.startAction(ActionGamePacket.INSTANCE);
-                        writer.friendlyByteBuf().writeBytes(customPayloadTempBuffer);
-                        writer.finishAction(ActionGamePacket.INSTANCE);
-                    } catch (Exception ignored) {}
-                } else {
-                    writer.startAction(ActionGamePacket.INSTANCE);
-                    var buf = writer.friendlyByteBuf();
-                    buf.writeVarInt(packetId);
-                    packet.write(buf);
-                    writer.finishAction(ActionGamePacket.INSTANCE);
-                }
+                customPayloadTempBuffer = writeGamePacket(writer, packet, customPayloadTempBuffer);
             }
 
             if (lastChunkCacheIndex >= 0) {
                 writeChunkCacheFile(chunkCacheOutput, lastChunkCacheIndex);
             }
         });
+    }
+
+    private static FriendlyByteBuf writeGamePacket(ReplayWriter writer, Packet<? super ClientGamePacketListener> packet, FriendlyByteBuf customPayloadTempBuffer) {
+        if (packet instanceof ClientboundBundlePacket bp) {
+            for (Packet<ClientGamePacketListener> child : bp.subPackets()) {
+                customPayloadTempBuffer = writeGamePacket(writer, child, customPayloadTempBuffer);
+            }
+            return customPayloadTempBuffer;
+        }
+
+        int packetId = ConnectionProtocol.PLAY.getPacketId(PacketFlow.CLIENTBOUND, packet);
+        if (packetId == -1) {
+            Flashback.LOGGER.error("Could not get packet id of packet {}!", packet.getClass());
+            return customPayloadTempBuffer;
+        }
+
+        if (packet instanceof ClientboundCustomPayloadPacket) {
+            // Some mods might throw errors when encoding packets, so this
+            // attempts to encode the packet before starting the action
+            try {
+                if (customPayloadTempBuffer == null) {
+                    customPayloadTempBuffer = new FriendlyByteBuf(Unpooled.buffer());
+                }
+
+                customPayloadTempBuffer.clear();
+                customPayloadTempBuffer.writeVarInt(packetId);
+                packet.write(customPayloadTempBuffer);
+
+                writer.startAction(ActionGamePacket.INSTANCE);
+                writer.friendlyByteBuf().writeBytes(customPayloadTempBuffer);
+                writer.finishAction(ActionGamePacket.INSTANCE);
+            } catch (Exception ignored) {}
+        } else {
+            writer.startAction(ActionGamePacket.INSTANCE);
+            var buf = writer.friendlyByteBuf();
+            buf.writeVarInt(packetId);
+            packet.write(buf);
+            writer.finishAction(ActionGamePacket.INSTANCE);
+        }
+        return customPayloadTempBuffer;
     }
 
     private void writeChunkCacheFile(FriendlyByteBuf chunkCacheOutput, int index) {
