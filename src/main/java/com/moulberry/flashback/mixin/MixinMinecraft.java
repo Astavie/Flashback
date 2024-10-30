@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.exporting.ExportJob;
@@ -30,6 +31,7 @@ import net.minecraft.client.User;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Overlay;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.main.GameConfig;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -151,6 +153,18 @@ public abstract class MixinMinecraft implements MinecraftExt {
 
     @Shadow
     public static void crash(CrashReport crashReport) {
+    }
+
+    @Shadow @Final private Window window;
+
+    @Inject(method="setScreen", at=@At("HEAD"), cancellable = true)
+    public void setScreen(Screen screen, CallbackInfo ci) {
+        if (Flashback.isInReplay() && screen instanceof AbstractContainerScreen) {
+            screen.added();
+            screen.init((Minecraft) (Object) this, window.getGuiScaledWidth(), window.getGuiScaledHeight());
+            screen.removed();
+            ci.cancel();
+        }
     }
 
     @Inject(method="<init>", at=@At("RETURN"))
