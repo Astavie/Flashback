@@ -159,7 +159,7 @@ public abstract class MixinMinecraft implements MinecraftExt {
 
     @Inject(method="setScreen", at=@At("HEAD"), cancellable = true)
     public void setScreen(Screen screen, CallbackInfo ci) {
-        if (Flashback.isInReplay() && screen instanceof AbstractContainerScreen) {
+        if (Flashback.isInReplay() && screen != null && !screen.getClass().getName().startsWith("net.minecraft") && !screen.getClass().getName().startsWith("com.moulberry.flashback")) {
             screen.added();
             screen.init((Minecraft) (Object) this, window.getGuiScaledWidth(), window.getGuiScaledHeight());
             screen.removed();
