@@ -24,8 +24,9 @@ import com.moulberry.flashback.packet.FinishedServerTick;
 import com.moulberry.flashback.record.FlashbackChunkMeta;
 import com.moulberry.flashback.record.FlashbackMeta;
 import com.moulberry.flashback.record.Recorder;
-import io.github.fabricators_of_create.porting_lib.entity.IEntityAdditionalSpawnData;
-import io.github.fabricators_of_create.porting_lib.entity.client.PortingLibEntityClient;
+import net.minecraft.resources.ResourceLocation;
+import org.valkyrienskies.mod.common.IShipObjectWorldServerProvider;
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -539,7 +540,7 @@ public class ReplayServer extends IntegratedServer {
             friendlyByteBuf.readerIndex(friendlyByteBuf.writerIndex());
             return;
         }
-        if (packet instanceof ClientboundCustomPayloadPacket cp && FabricLoader.getInstance().isModLoaded("porting_lib_entity") && cp.getIdentifier().equals(IEntityAdditionalSpawnData.EXTRA_DATA_PACKET)) {
+        if (packet instanceof ClientboundCustomPayloadPacket cp && cp.getIdentifier().equals(new ResourceLocation("porting_lib", "extra_entity_spawn_data"))) {
             this.gamePacketHandler.handleExtraDataPacket(cp);
         } else {
             if (!AllowPendingEntityPacketSet.allowPendingEntity(packet)) {
@@ -701,6 +702,9 @@ public class ReplayServer extends IntegratedServer {
     protected void runServer() {
         try {
             ServerLifecycleEvents.SERVER_STARTING.invoker().onServerStarting(this);
+            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+                ValkyrienSkiesMod.setCurrentServer(this);
+            }
             if (!this.initServer()) {
                 throw new IllegalStateException("Failed to initialize server");
             }
@@ -1008,6 +1012,9 @@ public class ReplayServer extends IntegratedServer {
                 this.forceTimeSynchronization();
             }
 
+            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+                ((IShipObjectWorldServerProvider) this).getVsPipeline().preTickGame();
+            }
             long l = Util.getNanos();
             this.tickCount++;
             this.tickChildren(booleanSupplier);
@@ -1022,6 +1029,9 @@ public class ReplayServer extends IntegratedServer {
             long n = Util.getNanos();
             this.getFrameTimer().logFrameDuration(n - l);
             this.getProfiler().pop();
+            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+                ((IShipObjectWorldServerProvider) this).getVsPipeline().postTickGame();
+            }
 
             int i = Math.max(2, Minecraft.getInstance().options.renderDistance().get());
             if (i != this.getPlayerList().getViewDistance()) {
@@ -1153,6 +1163,9 @@ public class ReplayServer extends IntegratedServer {
 
         this.getProfiler().popPush("connection");
         this.getConnection().tick();
+        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+            ((IShipObjectWorldServerProvider) this).getShipObjectWorld().setExecutedChunkWatchTasks(Collections.emptyList(), Collections.emptyList());
+        }
         this.getProfiler().popPush("players");
         this.getPlayerList().tick();
         if (SharedConstants.IS_RUNNING_IN_IDE) {
