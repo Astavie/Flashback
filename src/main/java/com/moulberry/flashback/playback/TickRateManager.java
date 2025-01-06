@@ -7,19 +7,30 @@ import net.minecraft.world.entity.Entity;
 
 public class TickRateManager {
     public static final float MIN_TICKRATE = 1.0F;
-    private float tickrate = 20.0F;
-    private long nanosecondsPerTick = TimeUtil.NANOSECONDS_PER_SECOND / 20L;
+
+    // Easiest way to sync between server and client: just make them static volatile
+    private static volatile float tickrate = 20.0F;
+    private static volatile long nanosecondsPerTick = TimeUtil.NANOSECONDS_PER_SECOND / 20L;
+    private static volatile boolean isFrozen = false;
+
     private boolean runGameElements = true;
-    private boolean isFrozen = false;
     private boolean isServerTickRateManager = false;
 
     public TickRateManager(boolean isServerTickRateManager) {
         this.isServerTickRateManager = isServerTickRateManager;
+        if (this.isServerTickRateManager) {
+            TickRateManager.setTickRate(20);
+            TickRateManager.setFrozen(false);
+        }
     }
 
-    public void setTickRate(float tickRate) {
-        this.tickrate = Math.max(tickRate, MIN_TICKRATE);
-        this.nanosecondsPerTick = (long)((double)TimeUtil.NANOSECONDS_PER_SECOND / (double)this.tickrate);
+    public static void setTickRate(float tickRate) {
+        TickRateManager.tickrate = Math.max(tickRate, MIN_TICKRATE);
+        TickRateManager.nanosecondsPerTick = (long)((double)TimeUtil.NANOSECONDS_PER_SECOND / (double)TickRateManager.tickrate);
+    }
+
+    public static void setFrozen(boolean frozen) {
+        TickRateManager.isFrozen = frozen;
     }
 
     public float tickrate() {
@@ -36,10 +47,6 @@ public class TickRateManager {
 
     public boolean runsNormally() {
         return this.runGameElements;
-    }
-
-    public void setFrozen(boolean frozen) {
-        this.isFrozen = frozen;
     }
 
     public boolean isFrozen() {

@@ -1,5 +1,6 @@
 package com.moulberry.flashback.mixin;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -21,6 +22,8 @@ import com.moulberry.flashback.ext.MinecraftExt;
 import com.moulberry.flashback.editor.ui.ReplayUI;
 import com.moulberry.flashback.visuals.AccurateEntityPositionHandler;
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.CrashReport;
 import net.minecraft.ReportedException;
 import net.minecraft.Util;
@@ -279,12 +282,16 @@ public abstract class MixinMinecraft implements MinecraftExt {
         }
 
         if (Flashback.isInReplay()) {
-            // TODO astavie: sync replayTimer from server to client
             i.set(replayTimer.advanceTime(Util.getMillis()));
             timer.partialTick = replayTimer.partialTick;
             timer.tickDelta = replayTimer.tickDelta;
-            for (int j = 0; j < Math.min(10, i.get()); j++) {
+
+            if (i.get() > 0) {
                 replayTimer.manager.tick();
+            }
+
+            if (!replayTimer.manager.runsNormally()) {
+                timer.partialTick = 1.0F;
             }
 
             int localPlayerTicks = localPlayerTimer.advanceTime(Util.getMillis());
@@ -295,6 +302,11 @@ public abstract class MixinMinecraft implements MinecraftExt {
                 }
             }
         }
+    }
+
+    @WrapWithCondition(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;tick()V"))
+    public boolean tick_levelRenderer(LevelRenderer instance) {
+        return !Flashback.isInReplay() || replayTimer.manager.runsNormally();
     }
 
     @Override

@@ -56,6 +56,13 @@ public abstract class MixinGameRenderer {
 
     @Shadow @Final private Camera mainCamera;
 
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;tickRain(Lnet/minecraft/client/Camera;)V"), cancellable = true)
+    public void tick(CallbackInfo ci) {
+        if (Flashback.isInReplay() && !((MinecraftExt) minecraft).flashback$getReplayTimer().manager.runsNormally()) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "render", at = @At("HEAD"))
     public void renderHead(float partialTick, long l, boolean bl, CallbackInfo ci) {
         LocalPlayer player = Minecraft.getInstance().player;

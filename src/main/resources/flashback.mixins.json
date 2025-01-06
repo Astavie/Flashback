@@ -24,6 +24,8 @@
     "playback.MixinItemInHandRenderer",
     "playback.MixinRemotePlayer",
     "playback.MixinMouseHandler",
+    "playback.MixinClientLevel",
+    "playback.MixinLevel",
     "record.MixinClientLevel",
     "record.MixinLocalPlayer",
     "record.MixinMultiPlayerGameMode",

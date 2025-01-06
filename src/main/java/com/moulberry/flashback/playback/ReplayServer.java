@@ -183,6 +183,16 @@ public class ReplayServer extends IntegratedServer {
         }
     }
 
+    @Nullable
+    @Override
+    public ServerLevel getLevel(ResourceKey<Level> resourceKey) {
+        if (resourceKey != null && resourceKey.location().equals(new ResourceLocation("hexdim", "hexdim"))) {
+            return overworld();
+        } else {
+            return super.getLevel(resourceKey);
+        }
+    }
+
     private void loadLevelChunkCache(Path levelChunkCachePath, int chunkCacheIndex, String name) throws IOException {
         int startIndex = chunkCacheIndex;
 
@@ -984,7 +994,7 @@ public class ReplayServer extends IntegratedServer {
 
         // Update tick rate & frozen state
         if (this.tickRateManager.tickrate() != tickRate) {
-            this.tickRateManager.setTickRate(tickRate);
+            TickRateManager.setTickRate(tickRate);
         }
 
         boolean tickChanged = this.targetTick != this.currentTick;
@@ -1118,17 +1128,17 @@ public class ReplayServer extends IntegratedServer {
             if (this.replayPaused) {
                 if (tickChanged) {
                     if (this.tickRateManager.isFrozen()) {
-                        this.tickRateManager.setFrozen(false);
+                        TickRateManager.setFrozen(false);
                     }
                     for (ReplayPlayer replayViewer : this.replayViewers) {
                         ServerPlayNetworking.send(replayViewer, FlashbackForceClientTick.INSTANCE);
                     }
-                    this.tickRateManager.setFrozen(true);
+                    TickRateManager.setFrozen(true);
                 } else if (!this.tickRateManager.isFrozen()) {
-                    this.tickRateManager.setFrozen(true);
+                    TickRateManager.setFrozen(true);
                 }
             } else if (this.tickRateManager.isFrozen()) {
-                this.tickRateManager.setFrozen(false);
+                TickRateManager.setFrozen(false);
             }
         }
     }
