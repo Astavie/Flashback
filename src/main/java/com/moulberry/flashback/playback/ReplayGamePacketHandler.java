@@ -575,6 +575,7 @@ public class ReplayGamePacketHandler implements ClientGamePacketListener {
         }
 
         chunk.setUnsaved(true);
+        forward(levelChunkWithLightPacket);
     }
 
     private void applyLightData(LevelLightEngine levelLightEngine, int x, int z, ClientboundLightUpdatePacketData clientboundLightUpdatePacketData) {
@@ -1121,13 +1122,8 @@ public class ReplayGamePacketHandler implements ClientGamePacketListener {
 
     @Override
     public void handleSoundEvent(ClientboundSoundPacket clientboundSoundPacket) {
-        Holder<SoundEvent> sound = clientboundSoundPacket.getSound();
-        double x = clientboundSoundPacket.getX();
-        double y = clientboundSoundPacket.getY();
-        double z = clientboundSoundPacket.getZ();
-        float volume = clientboundSoundPacket.getVolume();
         ResourceKey<Level> dimension = this.level().dimension();
-        this.replayServer.getPlayerList().broadcast(null, x, y, z, sound.value().getRange(volume), dimension, clientboundSoundPacket);
+        this.replayServer.getPlayerList().broadcastAll(clientboundSoundPacket, dimension);
     }
 
     @Override
@@ -1137,13 +1133,8 @@ public class ReplayGamePacketHandler implements ClientGamePacketListener {
             return;
         }
 
-        Holder<SoundEvent> sound = clientboundSoundEntityPacket.getSound();
-        double x = entity.getX();
-        double y = entity.getY();
-        double z = entity.getZ();
-        float volume = clientboundSoundEntityPacket.getVolume();
         ResourceKey<Level> dimension = this.level().dimension();
-        this.replayServer.getPlayerList().broadcast(null, x, y, z, sound.value().getRange(volume), dimension, clientboundSoundEntityPacket);
+        this.replayServer.getPlayerList().broadcastAll(clientboundSoundEntityPacket, dimension);
     }
 
     @Override

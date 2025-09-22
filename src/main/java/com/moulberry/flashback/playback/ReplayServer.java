@@ -360,6 +360,13 @@ public class ReplayServer extends IntegratedServer {
 
         super.initServer();
 
+        // disable physics for valkyrien skies
+        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+            var provider = (IShipObjectWorldServerProvider)this;
+            provider.getVsPipeline().setDeleteResources(true);
+            provider.getVsPipeline().setArePhysicsRunning(true);
+        }
+
         this.overworld().noSave = true;
 
         return true;
@@ -712,9 +719,9 @@ public class ReplayServer extends IntegratedServer {
     protected void runServer() {
         try {
             ServerLifecycleEvents.SERVER_STARTING.invoker().onServerStarting(this);
-            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-                ValkyrienSkiesMod.setCurrentServer(this);
-            }
+//            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+//                ValkyrienSkiesMod.setCurrentServer(this);
+//            }
             if (!this.initServer()) {
                 throw new IllegalStateException("Failed to initialize server");
             }
@@ -1022,9 +1029,9 @@ public class ReplayServer extends IntegratedServer {
                 this.forceTimeSynchronization();
             }
 
-            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-                ((IShipObjectWorldServerProvider) this).getVsPipeline().preTickGame();
-            }
+//            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+//                ((IShipObjectWorldServerProvider) this).getVsPipeline().preTickGame();
+//            }
             long l = Util.getNanos();
             this.tickCount++;
             this.tickChildren(booleanSupplier);
@@ -1039,9 +1046,9 @@ public class ReplayServer extends IntegratedServer {
             long n = Util.getNanos();
             this.getFrameTimer().logFrameDuration(n - l);
             this.getProfiler().pop();
-            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-                ((IShipObjectWorldServerProvider) this).getVsPipeline().postTickGame();
-            }
+//            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+//                ((IShipObjectWorldServerProvider) this).getVsPipeline().postTickGame();
+//            }
 
             int i = Math.max(2, Minecraft.getInstance().options.renderDistance().get());
             if (i != this.getPlayerList().getViewDistance()) {
@@ -1173,9 +1180,9 @@ public class ReplayServer extends IntegratedServer {
 
         this.getProfiler().popPush("connection");
         this.getConnection().tick();
-        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-            ((IShipObjectWorldServerProvider) this).getShipObjectWorld().setExecutedChunkWatchTasks(Collections.emptyList(), Collections.emptyList());
-        }
+//        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+//            ((IShipObjectWorldServerProvider) this).getShipObjectWorld().setExecutedChunkWatchTasks(Collections.emptyList(), Collections.emptyList());
+//        }
         this.getProfiler().popPush("players");
         this.getPlayerList().tick();
         if (SharedConstants.IS_RUNNING_IN_IDE) {
