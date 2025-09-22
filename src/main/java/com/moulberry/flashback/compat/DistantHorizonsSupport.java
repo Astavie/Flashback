@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class DistantHorizonsSupport {
 
-    private static boolean boundReplaySaveStructure = false;
+    private static boolean boundReplaySaveStructures = false;
 
     private static class ReplayDhSaveStructure implements IDhApiSaveStructure {
         public final Map<String, File> pathOverrides = new HashMap<>();
@@ -34,7 +34,7 @@ public class DistantHorizonsSupport {
     public static void register() {
         DhApiEventRegister.on(DhApiWorldLoadEvent.class, new DhApiWorldLoadEvent() {
             @Override
-            public void onLevelLoad(DhApiEventParam<EventParam> dhApiEventParam) {
+            public void onWorldLoad(DhApiEventParam<DhApiWorldLoadEvent.EventParam> param) {
                 if (Flashback.isInReplay()) {
                     Flashback.LOGGER.info("Forcing Distant Horizons to read-only because we're inside a replay");
                     DhApi.Delayed.worldProxy.setReadOnly(true);
@@ -46,25 +46,25 @@ public class DistantHorizonsSupport {
                     REPLAY_SAVE_STRUCTURE.pathOverrides.putAll(replayServer.getMetadata().distantHorizonPaths);
 
                     DhApi.overrides.bind(IDhApiSaveStructure.class, REPLAY_SAVE_STRUCTURE);
-                    boundReplaySaveStructure = true;
+                    boundReplaySaveStructures = true;
                 }
             }
         });
 
         DhApiEventRegister.on(DhApiWorldUnloadEvent.class, new DhApiWorldUnloadEvent() {
             @Override
-            public void onLevelUnload(DhApiEventParam<EventParam> dhApiEventParam) {
-                if (boundReplaySaveStructure) {
+            public void onWorldUnload(DhApiEventParam<DhApiWorldUnloadEvent.EventParam> param) {
+                if (boundReplaySaveStructures) {
                     Flashback.LOGGER.info("Unbinding IDhApiSaveStructure from REPLAY_SAVE_STRUCTURE");
                     DhApi.overrides.unbind(IDhApiSaveStructure.class, REPLAY_SAVE_STRUCTURE);
-                    boundReplaySaveStructure = false;
+                    boundReplaySaveStructures = false;
                 }
             }
         });
 
         DhApiEventRegister.on(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent() {
             @Override
-            public void onLevelLoad(DhApiEventParam<EventParam> dhApiEventParam) {
+            public void onLevelLoad(DhApiEventParam<DhApiLevelLoadEvent.EventParam> param) {
                 if (Flashback.RECORDER != null) {
                     Flashback.RECORDER.putDistantHorizonsPaths(getDimensionPaths());
                 }
