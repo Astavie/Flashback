@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
   };
 
   outputs = { self, nixpkgs }:
@@ -13,6 +13,10 @@
     {
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = with pkgs; mkShell rec {
+
+          packages = [
+            jetbrains.idea-community-bin
+          ];
 
           buildInputs = [
             libGL
