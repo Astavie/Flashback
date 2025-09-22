@@ -23,6 +23,7 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketSendListener;
@@ -355,7 +356,10 @@ public class ReplayGamePacketHandler implements ClientGamePacketListener {
         BlockPos blockPos = clientboundBlockEntityDataPacket.getPos();
         this.level().getBlockEntity(blockPos, clientboundBlockEntityDataPacket.getType()).ifPresent(blockEntity -> {
             // Update data
-            blockEntity.load(clientboundBlockEntityDataPacket.getTag());
+            CompoundTag tag = clientboundBlockEntityDataPacket.getTag();
+            if (tag != null) {
+                blockEntity.load(tag);
+            }
 
             // Sync
             blockEntity.setChanged();
