@@ -9,10 +9,12 @@ import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.PacketHelper;
 import com.moulberry.flashback.action.*;
 import com.moulberry.flashback.compat.DistantHorizonsSupport;
+import com.moulberry.flashback.compat.valkyrienskies.ActionShipDataCreate;
 import com.moulberry.flashback.io.AsyncReplaySaver;
 import com.moulberry.flashback.io.ReplayWriter;
 import com.moulberry.flashback.mixin.compat.bobby.FakeChunkManagerAccessor;
 import com.moulberry.flashback.packet.FlashbackAccurateEntityPosition;
+import io.netty.util.collection.LongObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.fabricmc.loader.api.FabricLoader;
@@ -64,6 +66,11 @@ import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.*;
 import org.jetbrains.annotations.Nullable;
+import org.valkyrienskies.core.impl.game.ships.ShipObject;
+import org.valkyrienskies.core.impl.hooks.CoreHooksImplKt;
+import org.valkyrienskies.core.impl.networking.impl.PacketShipDataCreate;
+import org.valkyrienskies.core.impl.networking.simple.SimplePackets;
+import org.valkyrienskies.mod.mixinducks.client.world.ClientChunkCacheDuck;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -766,8 +773,6 @@ public class Recorder {
         MultiPlayerGameMode gameMode = Minecraft.getInstance().gameMode;
         ClientChunkCache clientChunkCache = level.getChunkSource();
 
-        AtomicReferenceArray<LevelChunk> chunks = clientChunkCache.storage.chunks;
-
         // Configuration data
 
         List<Packet<? super ClientGamePacketListener>> gamePackets = new ArrayList<>();
@@ -893,13 +898,35 @@ public class Recorder {
         gamePackets.add(new ClientboundGameEventPacket(ClientboundGameEventPacket.RAIN_LEVEL_CHANGE, level.getRainLevel(1.0f)));
         gamePackets.add(new ClientboundGameEventPacket(ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE, level.getThunderLevel(1.0f)));
 
+        // Ships
+        this.asyncReplaySaver.writeGamePackets(gamePackets);
+        gamePackets.clear();
+        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+            var world = CoreHooksImplKt.getCoreHooks().getCurrentShipClientWorld();
+            var shipData = world.getLoadedShips().stream().map(ship -> ((ShipObject) ship).getShipData()).toList();
+            var simplePacket = new PacketShipDataCreate(shipData);
+
+            this.asyncReplaySaver.submit(writer -> {
+                writer.startAction(ActionShipDataCreate.INSTANCE);
+                writer.friendlyByteBuf().writeBytes(SimplePackets.serialize(simplePacket));
+                writer.finishAction(ActionShipDataCreate.INSTANCE);
+            });
+        }
+
         // Chunk data
         if (Runtime.getRuntime().availableProcessors() <= 1) {
             List<ClientboundLevelChunkWithLightPacket> levelChunkPackets = new ArrayList<>();
 
+            AtomicReferenceArray<LevelChunk> chunks = clientChunkCache.storage.chunks;
             for (int i = 0; i < chunks.length(); i++) {
                 LevelChunk chunk = chunks.get(i);
                 if (chunk != null) {
+                    levelChunkPackets.add(new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null));
+                }
+            }
+            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+                var shipChunks = (LongObjectMap<LevelChunk>) (Object) ((ClientChunkCacheDuck) clientChunkCache).vs$getShipChunks();
+                for (LevelChunk chunk : shipChunks.values()) {
                     levelChunkPackets.add(new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), null, null));
                 }
             }
@@ -927,9 +954,17 @@ public class Recorder {
             }
             List<PositionedTask> levelChunkPacketTasks = new ArrayList<>();
 
+            AtomicReferenceArray<LevelChunk> chunks = clientChunkCache.storage.chunks;
             for (int i = 0; i < chunks.length(); i++) {
                 LevelChunk chunk = chunks.get(i);
                 if (chunk != null) {
+                    var task = pool.submit(() -> new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), new BitSet(), new BitSet()));
+                    levelChunkPacketTasks.add(new PositionedTask(chunk.getPos(), task));
+                }
+            }
+            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+                var shipChunks = (LongObjectMap<LevelChunk>) (Object) ((ClientChunkCacheDuck) clientChunkCache).vs$getShipChunks();
+                for (LevelChunk chunk : shipChunks.values()) {
                     var task = pool.submit(() -> new ClientboundLevelChunkWithLightPacket(chunk, level.getLightEngine(), new BitSet(), new BitSet()));
                     levelChunkPacketTasks.add(new PositionedTask(chunk.getPos(), task));
                 }

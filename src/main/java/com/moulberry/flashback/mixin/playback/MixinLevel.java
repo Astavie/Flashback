@@ -1,9 +1,12 @@
 package com.moulberry.flashback.mixin.playback;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.ext.MinecraftExt;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import org.spongepowered.asm.mixin.Final;
@@ -34,6 +37,11 @@ public class MixinLevel {
     @WrapWithCondition(method="tickBlockEntities", at=@At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/entity/TickingBlockEntity;tick()V"))
     public boolean tickBlockEntity(TickingBlockEntity instance) {
         return runsNormally;
+    }
+
+    @WrapOperation(method="tickBlockEntities", at=@At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;shouldTickBlocksAt(Lnet/minecraft/core/BlockPos;)Z"))
+    public boolean shouldTickBlocksAt(Level instance, BlockPos pos, Operation<Boolean> original) {
+        return (isClientSide || !Flashback.isInReplay()) && original.call(instance, pos);
     }
 
 }

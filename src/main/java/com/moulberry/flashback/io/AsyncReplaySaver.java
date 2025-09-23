@@ -7,11 +7,11 @@ import com.moulberry.flashback.SneakyThrow;
 import com.moulberry.flashback.TempFolderProvider;
 import com.moulberry.flashback.action.ActionGamePacket;
 import com.moulberry.flashback.action.ActionLevelChunkCached;
+import com.moulberry.flashback.compat.valkyrienskies.ValkyrienSkiesSupport;
 import com.moulberry.flashback.playback.ReplayServer;
 import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.fabricmc.fabric.api.networking.v1.FabricPacket;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
@@ -20,7 +20,8 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.resources.ResourceLocation;
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -190,29 +191,24 @@ public class AsyncReplaySaver {
             return customPayloadTempBuffer;
         }
 
-        if (packet instanceof ClientboundCustomPayloadPacket) {
-            // Some mods might throw errors when encoding packets, so this
-            // attempts to encode the packet before starting the action
-            try {
-                if (customPayloadTempBuffer == null) {
-                    customPayloadTempBuffer = new FriendlyByteBuf(Unpooled.buffer());
+        if (packet instanceof ClientboundCustomPayloadPacket cp) {
+            if (cp.getIdentifier().equals(new ResourceLocation(ValkyrienSkiesMod.MOD_ID, "vs_packet"))) {
+                var data = cp.getData();
+                var action = ValkyrienSkiesSupport.getAction(data);
+                if (action != null) {
+                    writer.startAction(action);
+                    writer.friendlyByteBuf().writeBytes(data);
+                    writer.finishAction(action);
+                    return customPayloadTempBuffer;
                 }
-
-                customPayloadTempBuffer.clear();
-                customPayloadTempBuffer.writeVarInt(packetId);
-                packet.write(customPayloadTempBuffer);
-
-                writer.startAction(ActionGamePacket.INSTANCE);
-                writer.friendlyByteBuf().writeBytes(customPayloadTempBuffer);
-                writer.finishAction(ActionGamePacket.INSTANCE);
-            } catch (Exception ignored) {}
-        } else {
-            writer.startAction(ActionGamePacket.INSTANCE);
-            var buf = writer.friendlyByteBuf();
-            buf.writeVarInt(packetId);
-            packet.write(buf);
-            writer.finishAction(ActionGamePacket.INSTANCE);
+            }
         }
+
+        writer.startAction(ActionGamePacket.INSTANCE);
+        var buf = writer.friendlyByteBuf();
+        buf.writeVarInt(packetId);
+        packet.write(buf);
+        writer.finishAction(ActionGamePacket.INSTANCE);
         return customPayloadTempBuffer;
     }
 

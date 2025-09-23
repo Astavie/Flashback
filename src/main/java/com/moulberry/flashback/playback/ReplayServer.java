@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import com.moulberry.flashback.Flashback;
 import com.moulberry.flashback.SneakyThrow;
+import com.moulberry.flashback.compat.valkyrienskies.ValkyrienSkiesSupport;
 import com.moulberry.flashback.ext.LevelChunkExt;
 import com.moulberry.flashback.TempFolderProvider;
 import com.moulberry.flashback.keyframe.handler.ReplayServerKeyframeHandler;
@@ -38,13 +39,10 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.CrashReport;
-import net.minecraft.ReportedException;
-import net.minecraft.SharedConstants;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.gametest.framework.GameTestTicker;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -53,7 +51,6 @@ import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.network.protocol.status.ServerStatus;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.Services;
 import net.minecraft.server.WorldStem;
 import net.minecraft.server.level.ChunkMap;
@@ -66,7 +63,6 @@ import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.Mth;
 import net.minecraft.util.TimeUtil;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.util.profiling.jfr.JvmProfiler;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Entity;
@@ -75,9 +71,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.phys.Vec3;
@@ -99,6 +93,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class ReplayServer extends IntegratedServer {
 
@@ -359,13 +354,6 @@ public class ReplayServer extends IntegratedServer {
         });
 
         super.initServer();
-
-        // disable physics for valkyrien skies
-        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-            var provider = (IShipObjectWorldServerProvider)this;
-            provider.getVsPipeline().setDeleteResources(true);
-            provider.getVsPipeline().setArePhysicsRunning(true);
-        }
 
         this.overworld().noSave = true;
 
@@ -719,9 +707,9 @@ public class ReplayServer extends IntegratedServer {
     protected void runServer() {
         try {
             ServerLifecycleEvents.SERVER_STARTING.invoker().onServerStarting(this);
-//            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-//                ValkyrienSkiesMod.setCurrentServer(this);
-//            }
+            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+                ValkyrienSkiesMod.setCurrentServer(this);
+            }
             if (!this.initServer()) {
                 throw new IllegalStateException("Failed to initialize server");
             }
@@ -1018,51 +1006,7 @@ public class ReplayServer extends IntegratedServer {
 
         // Tick underlying server
         tickRateManager.tick();
-        boolean bl = this.paused;
-        this.paused = Minecraft.getInstance().isPaused();
-
-        boolean bl2 = Minecraft.getInstance().getConnection() != null;
-        if (bl2 && this.paused) {
-            this.tickPaused();
-        } else {
-            if (bl && !this.paused) {
-                this.forceTimeSynchronization();
-            }
-
-//            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-//                ((IShipObjectWorldServerProvider) this).getVsPipeline().preTickGame();
-//            }
-            long l = Util.getNanos();
-            this.tickCount++;
-            this.tickChildren(booleanSupplier);
-            if (l - this.lastServerStatus >= 5000000000L) {
-                this.lastServerStatus = l;
-                this.status = this.buildServerStatus();
-            }
-
-            this.getProfiler().push("tallying");
-            long m = this.tickTimes[this.tickCount % 100] = Util.getNanos() - l;
-            this.averageTickTime = this.averageTickTime * 0.8F + (float)m / 1000000.0F * 0.19999999F;
-            long n = Util.getNanos();
-            this.getFrameTimer().logFrameDuration(n - l);
-            this.getProfiler().pop();
-//            if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-//                ((IShipObjectWorldServerProvider) this).getVsPipeline().postTickGame();
-//            }
-
-            int i = Math.max(2, Minecraft.getInstance().options.renderDistance().get());
-            if (i != this.getPlayerList().getViewDistance()) {
-                Flashback.LOGGER.info("Changing view distance to {}, from {}", i, this.getPlayerList().getViewDistance());
-                this.getPlayerList().setViewDistance(i);
-            }
-
-            int j = Math.max(2, Minecraft.getInstance().options.simulationDistance().get());
-            if (j != this.previousSimulationDistance) {
-                Flashback.LOGGER.info("Changing simulation distance to {}, from {}", j, this.previousSimulationDistance);
-                this.getPlayerList().setSimulationDistance(j);
-                this.previousSimulationDistance = j;
-            }
-        }
+        super.tickServer(booleanSupplier);
 
         // Teleport entities
         if (!this.needsPositionUpdate.isEmpty()) {
@@ -1148,159 +1092,6 @@ public class ReplayServer extends IntegratedServer {
                 TickRateManager.setFrozen(false);
             }
         }
-    }
-
-    @Override
-    public void tickChildren(BooleanSupplier booleanSupplier) {
-        this.getProfiler().push("commandFunctions");
-        this.getFunctions().tick();
-        this.getProfiler().popPush("levels");
-
-        for (ServerLevel serverLevel : this.getAllLevels()) {
-            this.getProfiler().push((Supplier<String>)(() -> serverLevel + " " + serverLevel.dimension().location()));
-            if (this.getTickCount() % 20 == 0) {
-                this.getProfiler().push("timeSync");
-                this.synchronizeTime(serverLevel);
-                this.getProfiler().pop();
-            }
-
-            this.getProfiler().push("tick");
-
-            try {
-                this.tickLevel(booleanSupplier, serverLevel);
-            } catch (Throwable var6) {
-                CrashReport crashReport = CrashReport.forThrowable(var6, "Exception ticking world");
-                serverLevel.fillReportDetails(crashReport);
-                throw new ReportedException(crashReport);
-            }
-
-            this.getProfiler().pop();
-            this.getProfiler().pop();
-        }
-
-        this.getProfiler().popPush("connection");
-        this.getConnection().tick();
-//        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
-//            ((IShipObjectWorldServerProvider) this).getShipObjectWorld().setExecutedChunkWatchTasks(Collections.emptyList(), Collections.emptyList());
-//        }
-        this.getProfiler().popPush("players");
-        this.getPlayerList().tick();
-        if (SharedConstants.IS_RUNNING_IN_IDE) {
-            GameTestTicker.SINGLETON.tick();
-        }
-
-        this.getProfiler().popPush("server gui refresh");
-
-        for (int i = 0; i < this.tickables.size(); i++) {
-            ((Runnable)this.tickables.get(i)).run();
-        }
-
-        this.getProfiler().pop();
-    }
-    
-    private void tickLevel(BooleanSupplier booleanSupplier, ServerLevel level) {
-        ProfilerFiller profilerFiller = this.getProfiler();
-        level.handlingTick = true;
-//        profilerFiller.push("world border");
-//        level.getWorldBorder().tick();
-//        profilerFiller.popPush("weather");
-//        level.advanceWeatherCycle();
-        int i = level.getGameRules().getInt(GameRules.RULE_PLAYERS_SLEEPING_PERCENTAGE);
-        if (level.sleepStatus.areEnoughSleeping(i) && level.sleepStatus.areEnoughDeepSleeping(i, level.players)) {
-            if (level.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT)) {
-                long l = level.getLevelData().getDayTime() + 24000L;
-                level.setDayTime(l - l % 24000L);
-            }
-
-            level.wakeUpAllPlayers();
-            if (level.getGameRules().getBoolean(GameRules.RULE_WEATHER_CYCLE) && level.isRaining()) {
-                level.resetWeatherCycle();
-            }
-        }
-
-        level.updateSkyBrightness();
-//        level.tickTime();
-        profilerFiller.popPush("tickPending");
-//        if (!level.isDebug()) {
-//            long l = level.getGameTime();
-//            profilerFiller.push("blockTicks");
-//            level.blockTicks.tick(l, 65536, level::tickBlock);
-//            profilerFiller.popPush("fluidTicks");
-//            level.fluidTicks.tick(l, 65536, level::tickFluid);
-//            profilerFiller.pop();
-//        }
-
-        profilerFiller.popPush("raid");
-//        level.getRaids().tick();
-        profilerFiller.popPush("chunkSource");
-        level.getChunkSource().tick(booleanSupplier, true);
-        profilerFiller.popPush("blockEvents");
-//        level.runBlockEvents();
-        level.handlingTick = false;
-        profilerFiller.pop();
-        boolean bl = !level.players.isEmpty() || !level.getForcedChunks().isEmpty();
-        if (bl) {
-            level.resetEmptyTime();
-        }
-
-        if (bl || level.emptyTime++ < 300) {
-            profilerFiller.push("entities");
-            if (level.getDragonFight() != null) {
-                profilerFiller.push("dragonFight");
-                level.getDragonFight().tick();
-                profilerFiller.pop();
-            }
-
-            level.entityTickList.forEach(entity -> {
-                if (!entity.isRemoved()) {
-                    if (level.shouldDiscardEntity(entity)) {
-                        entity.discard();
-                    } else if (!tickRateManager.isEntityFrozen(entity)) {
-                        profilerFiller.push("checkDespawn");
-                        entity.checkDespawn();
-                        profilerFiller.pop();
-                        if (level.getChunkSource().chunkMap.getDistanceManager().inEntityTickingRange(entity.chunkPosition().toLong())) {
-                            Entity entity2 = entity.getVehicle();
-                            if (entity2 != null) {
-                                if (!entity2.isRemoved() && entity2.hasPassenger(entity)) {
-                                    return;
-                                }
-
-                                entity.stopRiding();
-                            }
-
-                            profilerFiller.push("tick");
-                            level.guardEntityTick(level::tickNonPassenger, entity);
-                            profilerFiller.pop();
-                        }
-                    }
-                }
-            });
-            profilerFiller.pop();
-
-            profilerFiller.push("blockEntities");
-            level.tickingBlockEntities = true;
-            if (!level.pendingBlockEntityTickers.isEmpty()) {
-                level.blockEntityTickers.addAll(level.pendingBlockEntityTickers);
-                level.pendingBlockEntityTickers.clear();
-            }
-
-            Iterator<TickingBlockEntity> iterator = level.blockEntityTickers.iterator();
-
-            while (iterator.hasNext()) {
-                TickingBlockEntity tickingBlockEntity = (TickingBlockEntity)iterator.next();
-                if (tickingBlockEntity.isRemoved()) {
-                    iterator.remove();
-                }
-            }
-
-            level.tickingBlockEntities = false;
-            profilerFiller.pop();
-        }
-
-        profilerFiller.push("entityManagement");
-        level.entityManager.tick();
-        profilerFiller.pop();
     }
 
     @Override
@@ -1409,6 +1200,11 @@ public class ReplayServer extends IntegratedServer {
             }
         }
         this.bossEvents.clear();
+
+        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+            var world = ((IShipObjectWorldServerProvider) this).getShipObjectWorld();
+            ValkyrienSkiesSupport.clearDataForPlayingSnapshot(world);
+        }
     }
 
     private void tryFollowLocalPlayer() {

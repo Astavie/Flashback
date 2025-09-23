@@ -11,6 +11,7 @@ import com.moulberry.flashback.action.*;
 import com.moulberry.flashback.command.BetterColorArgument;
 import com.moulberry.flashback.compat.DistantHorizonsSupport;
 import com.moulberry.flashback.compat.simple_voice_chat.SimpleVoiceChatPlayback;
+import com.moulberry.flashback.compat.valkyrienskies.ValkyrienSkiesSupport;
 import com.moulberry.flashback.configuration.FlashbackConfig;
 import com.moulberry.flashback.exporting.AsyncFileDialogs;
 import com.moulberry.flashback.exporting.ExportJob;
@@ -445,6 +446,10 @@ public class Flashback implements ModInitializer, ClientModInitializer {
             } else {
                 Flashback.LOGGER.error("DistantHorizons is installed, but API version is too low ({}). Disabling integration.", DhApi.getApiMajorVersion());
             }
+        }
+
+        if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
+            ValkyrienSkiesSupport.register();
         }
 	}
 
