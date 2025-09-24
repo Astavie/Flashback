@@ -25,6 +25,7 @@ import com.moulberry.flashback.packet.FinishedServerTick;
 import com.moulberry.flashback.record.FlashbackChunkMeta;
 import com.moulberry.flashback.record.FlashbackMeta;
 import com.moulberry.flashback.record.Recorder;
+import com.simibubi.create.CreateClient;
 import net.minecraft.resources.ResourceLocation;
 import org.valkyrienskies.mod.common.IShipObjectWorldServerProvider;
 import org.valkyrienskies.mod.common.ValkyrienSkiesMod;
@@ -92,8 +93,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ReplayServer extends IntegratedServer {
 
@@ -1204,6 +1203,9 @@ public class ReplayServer extends IntegratedServer {
         if (FabricLoader.getInstance().isModLoaded("valkyrienskies")) {
             var world = ((IShipObjectWorldServerProvider) this).getShipObjectWorld();
             ValkyrienSkiesSupport.clearDataForPlayingSnapshot(world);
+        }
+        if (FabricLoader.getInstance().isModLoaded("create")) {
+            Minecraft.getInstance().submit(CreateClient::invalidateRenderers);
         }
     }
 
