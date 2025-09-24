@@ -31,9 +31,9 @@ public class ActionShipDataDeltaUpdate implements Action {
         while (friendlyByteBuf.isReadable()) {
             try {
                 long id = friendlyByteBuf.readLong();
-                var ship = shipWorld.getLoadedShips().getById(id);
+                var ship = shipWorld.getAllShips().getById(id);
 
-                var oldNode = (ObjectNode) VSJacksonUtil.INSTANCE.getDeltaMapper().valueToTree(ship.getShipData());
+                var oldNode = (ObjectNode) VSJacksonUtil.INSTANCE.getDeltaMapper().valueToTree(ship);
                 var newNode = (ObjectNode) ShipObject.getJsonDiffDeltaAlgorithm().apply(oldNode, friendlyByteBuf);
 
                 oldNode.set("transform", newNode.get("transform"));
@@ -41,7 +41,7 @@ public class ActionShipDataDeltaUpdate implements Action {
 
                 VSJacksonUtil.INSTANCE.getDeltaMapper()
                         .readerFor(ShipDataCommon.class)
-                        .withValueToUpdate(ship.getShipData())
+                        .withValueToUpdate(ship)
                         .readValue(oldNode);
             } catch (IOException e) {
                 throw new RuntimeException(e);
