@@ -27,6 +27,7 @@
     "playback.MixinClientLevel",
     "playback.MixinLevel",
     "playback.MixinServerLevel",
+    "playback.MixinServerTickEvents",
     "record.MixinClientLevel",
     "record.MixinLocalPlayer",
     "record.MixinMultiPlayerGameMode",
