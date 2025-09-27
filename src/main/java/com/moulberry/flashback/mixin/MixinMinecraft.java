@@ -155,6 +155,9 @@ public abstract class MixinMinecraft implements MinecraftExt {
     public Timer timer;
 
     @Shadow
+    public boolean pause;
+
+    @Shadow
     public static void crash(CrashReport crashReport) {
     }
 
@@ -283,15 +286,11 @@ public abstract class MixinMinecraft implements MinecraftExt {
 
         if (Flashback.isInReplay()) {
             i.set(replayTimer.advanceTime(Util.getMillis()));
-            timer.partialTick = replayTimer.partialTick;
             timer.tickDelta = replayTimer.tickDelta;
-
-            if (i.get() > 0) {
-                replayTimer.manager.tick();
-            }
-
             if (!replayTimer.manager.runsNormally()) {
                 timer.partialTick = 1.0F;
+            } else {
+                timer.partialTick = replayTimer.partialTick;
             }
 
             int localPlayerTicks = localPlayerTimer.advanceTime(Util.getMillis());
@@ -300,6 +299,18 @@ public abstract class MixinMinecraft implements MinecraftExt {
                 for (int j = 0; j < localPlayerTicks; j++) {
                     this.level.guardEntityTick(this.level::tickNonPassenger, this.player);
                 }
+            }
+        }
+    }
+
+    @Inject(method = "tick", at = @At("HEAD"))
+    public void tick_tickRateManager(CallbackInfo ci) {
+        if (Flashback.isInReplay() && !pause) {
+            replayTimer.manager.tick();
+            if (!replayTimer.manager.runsNormally()) {
+                timer.partialTick = 1.0F;
+            } else {
+                timer.partialTick = replayTimer.partialTick;
             }
         }
     }
